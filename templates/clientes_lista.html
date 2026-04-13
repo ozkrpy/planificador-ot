@@ -20,6 +20,9 @@
     <td class="align-middle">
         {% if c.observaciones_detalladas %}
         <div class="mt-1">
+            {# 1. Pre-calculamos el color del texto en una variable #}
+            {% set text_color = '#ffffff' if badge_class != 'badge-light' else '#212529' %} 
+            
             {# Usamos la sintaxis de filtros propia de Jinja2 #}
             {% set tipo = (c.tipo_contrato | trim | lower) if c.tipo_contrato else '' %}
             
@@ -38,9 +41,12 @@
             {% endif %}
     
             <span class="badge {{ badge_class }} d-inline-block border x-small font-weight-bold" 
-          style="padding: 2px 5px; border-radius: 3px; border-color: {{ border_color }} !important; {{ 'color: #fff;' if badge_class != 'badge-light' else 'color: #000;' }}">
-        {{ c.tipo_contrato|upper if c.tipo_contrato else 'N/A' }}
-    </span>
+                style="padding: 2px 5px; 
+                        border-radius: 3px; 
+                        border-color: {{ border_color }} !important; 
+                        color: {{ text_color }};">
+                {{ c.tipo_contrato|upper if c.tipo_contrato else 'N/A' }}
+            </span>
         </div>
         <div class="x-small text-muted italic mb-2" style="max-width: 400px; white-space: normal;">
                 <i class="fa-solid fa-circle-info text-info fa-fw"></i> {{ c.observaciones_detalladas }}
