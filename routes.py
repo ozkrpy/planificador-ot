@@ -273,5 +273,5 @@ def init_routes(app):
     @app.route('/facturacion')
     @login_required
     def facturacion():
-        return "Module under construction"
+        return "Module facturacion under construction"
 
