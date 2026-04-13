@@ -1,0 +1,155 @@
+/* Custom Serious Dark Theme */
+:root {
+    --nav-bg: #4a5568;       /* Lighter than pure black, but still professional */
+    --nav-border: #454d55;   /* Subtle bottom border for depth */
+    --dark-bg: #1a1d20;
+    --card-bg: #ffffff;
+    --text-main: #212324;
+}
+
+.navbar.bg-dark {
+    background-color: var(--nav-bg) !important;
+    border-bottom: 2px solid var(--nav-border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Adds a clean lift from the background */
+}
+
+/* Softer hover effect for the menu items */
+.navbar-dark .navbar-nav .nav-link {
+    color: rgba(255,255,255,.75);
+    transition: color 0.3s ease;
+}
+
+.navbar-dark .navbar-nav .nav-link:hover {
+    color: #ffffff;
+    background-color: rgba(255,255,255,0.05); /* Very subtle highlight on hover */
+    border-radius: 4px;
+}
+
+body {
+    background-color: #f0f2f5; /* Subtle light gray background */
+    color: var(--text-main);
+}
+
+/* Override Bootstrap Primary with a Slate/Charcoal tone */
+.bg-primary {
+    background-color: #2c3e50 !important; 
+}
+
+.btn-primary {
+    background-color: #2c3e50 !important;
+    border-color: #1a252f !important;
+}
+
+/* Refined Cards */
+.card {
+    border: none;
+    border-radius: 4px;
+    border-top: 3px solid #1f0278; /* Serious accent line at top */
+}
+
+.card-header {
+    background-color: transparent !important;
+    color: #2c3e50 !important;
+    font-weight: bold;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Custom shadow for a "clean" floating look */
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+/* Specific styling for your Status card */
+.border-left-primary {
+    border-left: .25rem solid #2c3e50 !important;
+    border-top: none !important;
+}
+
+.table thead th {
+    border-top: none;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent-gray);
+}
+
+.btn-outline-danger {
+    border-color: #e3342f;
+    color: #e3342f;
+}
+
+.btn-outline-danger:hover {
+    background-color: #e3342f;
+    color: white;
+}
+
+/* Extra small labels for a professional form look */
+.x-small {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Softer borders for inputs */
+.form-control-sm {
+    border-radius: 2px;
+    border: 1px solid #d1d5db;
+}
+
+.form-control-sm:focus {
+    border-color: #2c3e50;
+    box-shadow: none;
+}
+
+/* Helper for vertical division on large screens */
+@media (min-width: 992px) {
+    .border-right {
+        border-right: 1px solid #edf2f7 !important;
+    }
+}
+
+/* Button size tweak */
+.btn-xs {
+    padding: 1px 8px;
+    font-size: 0.75rem;
+}
+
+.nav-link i {
+    display: block;
+    width: 100%;
+    height: 20px; /* Altura fija para el icono */
+    line-height: 20px;
+}
+
+/* Ajuste para los nombres de las secciones entre corchetes */
+.x-small {
+    font-size: 0.75rem;
+    display: block;
+    white-space: nowrap;
+}
+
+/* El botón de Salir (derecha) */
+.logout-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.7rem;
+}
+
+.fa-fw {
+    text-align: center;
+    width: 1.25em;
+}
+
+/* Evitar que los botones de acción se deformen por el line-height */
+.btn-sm i {
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+/* Ajuste para el botón de ubicación de la imagen */
+.btn-xs {
+    font-size: 0.65rem;
+    line-height: 1.5;
+    border-radius: 4px;
+}

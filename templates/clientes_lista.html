@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{# 1. DEFINIR LA MACRO AL PRINCIPIO #}
+{% macro render_cliente_row(c) %}
+<tr style="background-color: #ffffff !important;">
+    <td class="align-middle pl-3" style="white-space: nowrap; width: 1%;">
+        <strong>{{ c.nombre }}</strong><br>
+        <small class="text-muted"><strong>RUC: </strong>{{ c.ruc }}</small><br>
+        <small><strong>Tel: </strong>
+            {% if c.telefono %}
+                {% for tel in c.telefono.split(',') %}
+                    <a href="tel:{{ tel.strip() }}" class="text-dark">{{ tel.strip() }}</a>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            {% else %}
+                S/N
+            {% endif %}
+        </small>
+        <br>
+    </td>
+    <td class="align-middle">
+        {% if c.observaciones_detalladas %}
+        <div class="mt-1">
+            {# Usamos la sintaxis de filtros propia de Jinja2 #}
+            {% set tipo = (c.tipo_contrato | trim | lower) if c.tipo_contrato else '' %}
+            
+            {% if tipo == (txt.CONTRATO_PISCINA | trim | lower) %}
+                {% set badge_class = 'badge-primary' %}
+                {% set border_color = '#007bff' %}
+            {% elif tipo == (txt.CONTRATO_JARDIN | trim | lower) %}
+                {% set badge_class = 'badge-success' %}
+                {% set border_color = '#28a745' %}
+            {% elif tipo == (txt.CONTRATO_AMBOS | trim | lower) %}
+                {% set badge_class = 'badge-info' %}
+                {% set border_color = '#17a2b8' %}
+            {% else %}
+                {% set badge_class = 'badge-light' %}
+                {% set border_color = '#dee2e6' %}
+            {% endif %}
+    
+            <span class="badge {{ badge_class }} d-inline-block border x-small font-weight-bold" 
+          style="padding: 2px 5px; border-radius: 3px; border-color: {{ border_color }} !important; {{ 'color: #fff;' if badge_class != 'badge-light' else 'color: #000;' }}">
+        {{ c.tipo_contrato|upper if c.tipo_contrato else 'N/A' }}
+    </span>
+        </div>
+        <div class="x-small text-muted italic mb-2" style="max-width: 400px; white-space: normal;">
+                <i class="fa-solid fa-circle-info text-info fa-fw"></i> {{ c.observaciones_detalladas }}
+            </div>
+        {% endif %}
+    </td>
+    <td class="align-middle">
+        {% if c.ubicaciones %}
+            <div class="d-flex flex-wrap" style="gap: 5px;">
+                {% for ubi in c.ubicaciones %}
+                    <a href="{{ ubi.coordenadas_url }}" target="_blank" 
+                       class="btn btn-xs btn-light border text-dark shadow-sm d-inline-flex align-items-center" 
+                       style="padding: 2px 8px;" title="{{ ubi.coordenadas_url }}">
+                        <i class="fa-solid fa-location-dot text-warning mr-1 fa-fw"></i> 
+                        <span class="x-small font-weight-bold" style="letter-spacing: 0.5px;">{{ ubi.nombre_sucursal|upper or 'PRINCIPAL' }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </td>
+    <td class="text-right align-middle pr-3">
+        <div class="d-flex justify-content-end align-items-center">
+            {# Botón Editar #}
+            <a href="{{ url_for('clientes_editar', id=c.id) }}" 
+               class="btn btn-sm btn-outline-secondary shadow-sm d-flex align-items-center justify-content-center mr-1" 
+               style="width: 32px; height: 32px; padding: 0;">
+                <i class="fa-solid fa-pen-to-square fa-fw"></i>
+            </a>
+            {# Botón Eliminar #}
+            <form action="{{ url_for('clientes_eliminar', id=c.id) }}" method="POST" onsubmit="return confirm('¿Seguro?');" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm d-flex align-items-center justify-content-center" 
+                        style="width: 32px; height: 32px; padding: 0;">
+                    <i class="fa-solid fa-trash-can fa-fw"></i>
+                </button>
+            </form>
+        </div>
+    </td>
+</tr>
+{% endmacro %}
+
+{% block main %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-light x-small font-weight-bold">{{ txt.AJUSTES }}</div>
+                <div class="card-body">
+                    <a href="{{ url_for('clientes_nuevo') }}" class="btn btn-dark btn-sm btn-block mb-3">
+                        <i class="fa fa-plus"></i> {{ txt.BOTON_NUEVO_CLIENTE }}
+                    </a>
+                    <hr>
+                    <p class="x-small font-weight-bold text-muted">Filtrar por Categoría</p>
+<ul class="list-group list-group-flush small">
+    {# Opción para mostrar todos #}
+    <li class="list-group-item px-0 py-1 border-0">
+        <a href="{{ url_for('clientes') }}" class="text-dark {{ 'font-weight-bold' if not request.args.get('q') }}">
+            Todas las categorías
+        </a>
+    </li>
+    
+    {% for cat in categorias %}
+    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1 border-0">
+        {# Al hacer clic, enviamos el nombre de la categoría al parámetro 'q' #}
+        <a href="{{ url_for('clientes', q=cat.nombre) }}" 
+           class="text-dark {{ 'font-weight-bold' if request.args.get('q') == cat.nombre }}">
+            {{ cat.nombre }}
+        </a>
+        <span class="badge badge-light border text-muted" style="font-size: 0.7rem;">
+            {{ cat.clientes|length }}
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-light x-small font-weight-bold">GESTIONAR CATEGORÍAS</div>
+                <div class="card-body">
+                    <form action="{{ url_for('categoria_guardar') }}" method="POST" class="mb-3">
+                        <div class="input-group input-group-sm">
+                            <input type="text" name="nombre" class="form-control" placeholder="Nueva..." required>
+                            <div class="input-group-append">
+                                <button class="btn btn-dark" type="submit"><i class="fa fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </form>
+                    <div class="list-group list-group-flush">
+                        {% for cat in categorias %}
+                        <div
+                            class="list-group-item d-flex justify-content-between align-items-center px-0 py-1 border-0">
+                            <span class="small text-dark">{{ cat.nombre }}</span>
+                            <a href="{{ url_for('categoria_eliminar', id=cat.id) }}" class="text-danger small"
+                                onclick="return confirm('¿Eliminar?')">
+                                <i class="fa fa-times-circle"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-dark">{{ txt.CLIENTES_TITULO }}</h5>
+                    
+                    {# Formulario de Búsqueda #}
+                    <form action="{{ url_for('clientes') }}" method="GET" class="form-inline">
+                        <div class="input-group input-group-sm">
+                            <input type="text" name="q" class="form-control" 
+                                placeholder="Buscar nombre, RUC..." 
+                                value="{{ request.args.get('q', '') }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-dark" type="submit">
+                                    <i class="fa fa-search"></i>
+                                </button>
+                                {% if request.args.get('q') %}
+                                    <a href="{{ url_for('clientes') }}" class="btn btn-outline-secondary">
+                                        <i class="fa fa-times"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr class="bg-light">
+                                    <th class="pl-3">{{ txt.TABLA_DESC }}</th>
+                                    <th>OBS. A CONSIDERAR</th>
+                                    <th>UBICACION</i></th>
+                                    <th class="text-right pr-3">{{ txt.ACCIONES }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {# --- SECCIÓN 1: CLIENTES (Siempre al principio) --- #}
+                                <tr style="border-top: 2px solid #dee2e6; background-color: #bfc0c1;">
+                                    <td colspan="3" class="py-1 pl-3">
+                                        <br>
+                                        <small class="text-dark font-weight-bold text-uppercase"
+                                            style="letter-spacing: 1px;">
+                                            CLIENTES
+                                        </small>
+                                        <br>
+                                        <p></p>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                {% for c in clientes if c.categoria_rel and c.categoria_rel.nombre == 'CLIENTE' %}
+                                {{ render_cliente_row(c) }}
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-2 text-muted x-small italic">No hay clientes
+                                        registrados.</td>
+                                </tr>
+                                {% endfor %}
+
+                                {# --- SEPARADOR SIMPLE --- #}
+                                <tr style="border-top: 2px solid #dee2e6; background-color: #14212f;">
+                                    <td colspan="3" class="py-1 pl-3">
+                                        <br>
+                                        <small class="text-white font-weight-bold text-uppercase"
+                                            style="letter-spacing: 1px;">
+                                            Proveedores y Otras Categorías
+                                        </small>
+                                        <br>
+                                        <p></p>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                {# --- SECCIÓN 2: OTRAS CATEGORÍAS (Agrupadas dinámicamente) --- #}
+                                {# Filtramos para mostrar todas las categorías que NO sean 'CLIENTE' #}
+                                {% for cat in categorias if cat.nombre != 'CLIENTE' %}
+                                {% set registros_en_cat = clientes | selectattr('categoria_id', 'equalto', cat.id) |
+                                list %}
+
+                                {% if registros_en_cat %}
+                                <tr class="bg-light text-dark border-top">
+                                    <td colspan="4" class="py-1 pl-3">
+                                        <strong class="small text-uppercase">{{ cat.nombre }}</strong>
+                                        <span class="badge badge-pill badge-dark ml-2" style="font-size: 0.6rem;">{{
+                                            registros_en_cat|length }}</span>
+                                    </td>
+                                </tr>
+                                {% for c in registros_en_cat %}
+                                {{ render_cliente_row(c) }}
+                                {% endfor %}
+                                {% endif %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-2 text-muted x-small italic">No hay proveedores.</td>
+                                </tr>
+                                {% endfor %}
+
+                                {# --- SECCIÓN 3: REGISTROS SIN CATEGORÍA (Opcional) --- #}
+                                {% set sin_cat = clientes | selectattr('categoria_id', 'none') | list %}
+                                {% if sin_cat %}
+                                <tr class="bg-warning text-dark border-top">
+                                    <td colspan="4" class="py-1 pl-3"><strong class="small">SIN CATEGORÍA
+                                            ASIGNADA</strong></td>
+                                </tr>
+                                {% for c in sin_cat %}
+                                {{ render_cliente_row(c) }}
+                                {% endfor %}
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

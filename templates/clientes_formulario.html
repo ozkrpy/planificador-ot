@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block main %}
+<div class="container-fluid">
+    <form action="{% if c is defined and c %}{{ url_for('clientes_editar', id=c.id) }}{% else %}{{ url_for('clientes_guardar') }}{% endif %}" method="POST">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light x-small font-weight-bold">
+                        {% if c %}{{ txt.MODIFICAR_TITULO }}{% else %}{{ txt.CLIENTES_TITULO }}{% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="x-small font-weight-bold">{{ txt.TABLA_USUARIO }} / Razón Social</label>
+                            <input type="text" name="nombre" value="{{ c.nombre if c else '' }}" class="form-control form-control-sm" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="x-small font-weight-bold">Cédula (Opcional)</label>
+                                    <input type="text" name="cedula" value="{{ c.cedula if c else '' }}" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="x-small font-weight-bold">RUC</label>
+                                    <input type="text" name="ruc" value="{{ c.ruc if c else '' }}" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="x-small font-weight-bold">Categoría / Tipo</label>
+                                    <select name="categoria_id" class="form-control form-control-sm" required>
+                                        <option value="">-- Seleccionar --</option>
+                                        {% for cat in categorias %}
+                                        <option value="{{ cat.id }}" {% if c and c.categoria_id == cat.id %}selected{% endif %}>
+                                            {{ cat.nombre }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+    <label class="x-small font-weight-bold">Teléfonos de Contacto</label>
+    <div id="telefonos-container">
+        {% if c and c.telefono %}
+            {# Convertimos el string de la DB en lista si están separados por comas #}
+            {% for tel in c.telefono.split(',') %}
+            <div class="input-group input-group-sm mb-2 telefono-row">
+                <input type="text" name="telefonos[]" value="{{ tel.strip() }}" class="form-control" placeholder="+595...">
+                <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-danger remove-tel"><i class="fa fa-times"></i></button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="input-group input-group-sm mb-2 telefono-row">
+                <input type="text" name="telefonos[]" class="form-control" placeholder="+595...">
+            </div>
+        {% endif %}
+    </div>
+    <button type="button" id="add-tel" class="btn btn-xs btn-link text-dark p-0">
+        <i class="fa fa-plus-circle"></i> Añadir otro teléfono
+    </button>
+</div>
+
+<script>
+// Lógica para añadir teléfonos
+document.getElementById('add-tel').addEventListener('click', function() {
+    const container = document.getElementById('telefonos-container');
+    const div = document.createElement('div');
+    div.className = 'input-group input-group-sm mb-2 telefono-row';
+    div.innerHTML = `
+        <input type="text" name="telefonos[]" class="form-control" placeholder="+595...">
+        <div class="input-group-append">
+            <button type="button" class="btn btn-outline-danger remove-tel"><i class="fa fa-times"></i></button>
+        </div>`;
+    container.appendChild(div);
+});
+
+// Lógica para eliminar teléfonos
+document.addEventListener('click', function(e) {
+    if(e.target && e.target.closest('.remove-tel')) {
+        e.target.closest('.telefono-row').remove();
+    }
+});
+</script>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="x-small font-weight-bold">{{ txt.TIPO_CONTRATO }}</label>
+                                <select name="tipo_contrato" class="form-control form-control-sm">
+                                    <option value="{{ txt.CONTRATO_AMBOS }}" {% if c and c.tipo_contrato == txt.CONTRATO_AMBOS %}selected{% endif %}>{{ txt.CONTRATO_AMBOS }}</option>
+                                    <option value="{{ txt.CONTRATO_PISCINA }}" {% if c and c.tipo_contrato == txt.CONTRATO_PISCINA %}selected{% endif %}>{{ txt.CONTRATO_PISCINA }}</option>
+                                    <option value="{{ txt.CONTRATO_JARDIN }}" {% if c and c.tipo_contrato == txt.CONTRATO_JARDIN %}selected{% endif %}>{{ txt.CONTRATO_JARDIN }}</option>
+                                    <option value="{{ txt.CONTRATO_PROVEEDOR }}" {% if c and c.tipo_contrato == txt.CONTRATO_PROVEEDOR %}selected{% endif %}>{{ txt.CONTRATO_PROVEEDOR }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="x-small font-weight-bold">Estado del Servicio</label>
+                                <select name="status" class="form-control form-control-sm">
+                                    <option value="ACTIVE" {% if c and c.status == 'ACTIVE' %}selected{% endif %}>{{ txt.STATUS_ACTIVO }}</option>
+                                    <option value="SUSPENDED" {% if c and c.status == 'SUSPENDED' %}selected{% endif %}>{{ txt.STATUS_SUSPENDIDO }}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label class="x-small font-weight-bold">Email</label>
+                                    <input type="email" name="email" value="{{ c.email if c else '' }}" class="form-control form-control-sm" placeholder="email@dominio.com">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light x-small font-weight-bold">{{ txt.CONOCIMIENTO_CLIENTE }}</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="x-small font-weight-bold">Instrucciones Especiales y Logística</label>
+                            <textarea name="observaciones" class="form-control form-control-sm" rows="6" 
+                                placeholder="{{ txt.AYUDA_OBSERVACIONES }}">{{ c.observaciones_detalladas if c else '' }}</textarea>
+                        </div>
+                        <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light x-small font-weight-bold">UBICACIONES / SUCURSALES</div>
+    <div class="card-body">
+        <div id="ubicaciones-container">
+            <label class="x-small font-weight-bold mb-2">Lista de Sedes</label>
+            
+            {% if c and c.ubicaciones %}
+                {% for ubi in c.ubicaciones %}
+                <div class="ubicacion-row border-bottom pb-2 mb-2">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <input type="text" name="ubi_nombre[]" value="{{ ubi.nombre_sucursal }}" 
+                                   class="form-control form-control-sm" placeholder="Ej: Casa Quinta">
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" name="ubi_url[]" value="{{ ubi.coordenadas_url }}" 
+                                   class="form-control form-control-sm" placeholder="Link de Google Maps">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-sm btn-outline-danger border-0 remove-ubi">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="ubicacion-row border-bottom pb-2 mb-2">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <input type="text" name="ubi_nombre[]" class="form-control form-control-sm" placeholder="Ej: Principal">
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" name="ubi_url[]" class="form-control form-control-sm" placeholder="Link de Google Maps">
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <button type="button" id="add-ubi" class="btn btn-xs btn-outline-dark mt-2">
+            <i class="fa fa-plus"></i> Añadir otra ubicación
+        </button>
+    </div>
+</div>
+
+{# SCRIPT PARA MANEJO DINÁMICO #}
+<script>
+document.getElementById('add-ubi').addEventListener('click', function() {
+    const container = document.getElementById('ubicaciones-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'ubicacion-row border-bottom pb-2 mb-2';
+    newRow.innerHTML = `
+        <div class="row">
+            <div class="col-md-5">
+                <input type="text" name="ubi_nombre[]" class="form-control form-control-sm" placeholder="Nombre de sede">
+            </div>
+            <div class="col-md-6">
+                <input type="text" name="ubi_url[]" class="form-control form-control-sm" placeholder="Link de Google Maps">
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-sm btn-outline-danger border-0 remove-ubi">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+        </div>`;
+    container.appendChild(newRow);
+});
+
+document.addEventListener('click', function(e) {
+    if(e.target && e.target.closest('.remove-ubi')) {
+        e.target.closest('.ubicacion-row').remove();
+    }
+});
+</script>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                    <a href="{{ url_for('clientes') }}" class="btn btn-sm btn-outline-secondary mr-2">Cancelar</a>
+                    <button type="submit" class="btn btn-dark btn-sm px-4 shadow-sm">
+                        <i class="fa fa-save"></i> {% if c %}Actualizar{% else %}Guardar{% endif %} Cliente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

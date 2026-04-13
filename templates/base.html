@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <!-- <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous"></link>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"></link>
+    
+    <title>{{ txt.TITULO_APP }}</title>
+  </head> -->
+  <head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <title>{{ txt.TITULO_APP }}</title>
+  </head>
+  <body>
+    
+    <script>
+      function goBack() {
+          window.history.back();
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+    <div class="container-fluid">
+        {% if current_user.is_authenticated %}
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
+            <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item text-center">
+                        <a href="{{ url_for('index') }}" class="nav-link text-center text-white">
+                            <i class="fa-solid fa-house fa-lg d-block"></i>
+                            <small><strong>[{{ txt.HOME }}]</strong></small>
+                        </a>
+                    </li>
+                    <li class="nav-item text-center">
+                        <a href="{{ url_for('clientes') }}" class="nav-link text-center text-white">
+                            <i class="fa-solid fa-users fa-lg d-block"></i>
+                            <small><strong>[{{ txt.CLIENTES }}]</strong></small>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('agendamientos') }}" class="nav-link text-center text-white">
+                            <i class="fa-solid fa-calendar-days fa-lg d-block"></i>
+                            <small><strong>[{{ txt.AGENDAMIENTOS }}]</strong></small>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('facturacion') }}" class="nav-link text-center text-white">
+                            <i class="fa-solid fa-calendar-days fa-lg d-block"></i>
+                            <small><strong>[{{ txt.FACTURACION }}]</strong></small>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('parametrico') }}" class="nav-link text-center text-white">
+                            <i class="fa-solid fa-gears fa-lg d-block"></i>
+                            <small><strong>[{{ txt.AJUSTES }}]</strong></small>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="mx-auto order-0 text-center">
+                <h2 class="navbar-brand mb-0" style="font-size: 1.5rem;"><strong>{{ txt.TITULO_APP }}</strong></h2>
+                <div class="text-muted" style="font-size: 0.7rem;">Ver. 2.0</div>
+            </div>
+
+            <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a href="{{ url_for('logout') }}" class="nav-link text-center text-white">
+                            <i class="fa-solid fa-right-from-bracket fa-lg d-block"></i>
+                            <small><strong>[ {{ txt.SALIR }}, {{ current_user.username | upper }}! ]</strong></small>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        {% endif %}
+              </li>
+            </ul>
+        </div>
+    </nav>
+    <br>
+    <div>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-primary">
+              {{ message }}
+            </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      </div>
+      <div>
+        {% block main %}{% endblock %}
+      </div>
+    </div>
+  </body>
+</html>
