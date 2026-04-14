@@ -124,7 +124,7 @@ def init_routes(app):
 
         lista_clientes = base_query.all()
         lista_categorias = Categoria.query.all()
-        
+
         return render_template('clientes_lista.html', 
                             clientes=lista_clientes, 
                             categorias=lista_categorias
@@ -274,4 +274,5 @@ def init_routes(app):
     @login_required
     def facturacion():
         return "Module facturacion under construction"
+    
 

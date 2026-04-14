@@ -18,7 +18,6 @@
         <br>
     </td>
     <td class="align-middle">
-        {% if c.observaciones_detalladas %}
         <div class="mt-1">
             {# 1. Pre-calculamos el color del texto en una variable #}
             {% set text_color = '#ffffff' if badge_class != 'badge-light' else '#212529' %} 
@@ -35,9 +34,14 @@
             {% elif tipo == (txt.CONTRATO_AMBOS | trim | lower) %}
                 {% set badge_class = 'badge-info' %}
                 {% set border_color = '#17a2b8' %}
+            {% elif tipo == (txt.CONTRATO_PROVEEDOR | trim | lower) %}
+                {% set badge_class = 'badge-secondary' %}
+                {% set border_color = '#3e005d' %}
+                {% set text_color = '#e8eaec' %}
             {% else %}
                 {% set badge_class = 'badge-light' %}
-                {% set border_color = '#dee2e6' %}
+                {% set border_color = '#2a2a2b' %}
+                {% set text_color = '#777b7f' %}
             {% endif %}
     
             <span class="badge {{ badge_class }} d-inline-block border x-small font-weight-bold" 
@@ -48,6 +52,7 @@
                 {{ c.tipo_contrato|upper if c.tipo_contrato else 'N/A' }}
             </span>
         </div>
+        {% if c.observaciones_detalladas %}
         <div class="x-small text-muted italic mb-2" style="max-width: 400px; white-space: normal;">
                 <i class="fa-solid fa-circle-info text-info fa-fw"></i> {{ c.observaciones_detalladas }}
             </div>

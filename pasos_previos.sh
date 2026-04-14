@@ -42,3 +42,24 @@ with app.app_context(): \
     Cliente.query.delete(); \
     db.session.commit(); \
     print('Todos los clientes y ubicaciones han sido eliminados.')"
+
+# ACTUALIZAR MASIVAMENTE
+flask shell
+from app import app, db
+from models import Cliente
+# 1. Filtramos los clientes que tienen 'BOTH' (insensible a mayúsculas por seguridad)
+target_clients = Cliente.query.filter(Cliente.tipo_contrato.ilike('BOTH'))
+
+# 2. Contamos antes de actualizar para estar seguros
+count = target_clients.count()
+print(f"Se encontraron {count} registros para actualizar.")
+
+# 3. Realizamos la actualización masiva
+target_clients.update({Cliente.tipo_contrato: 'PROVEEDORES'}, synchronize_session=False)
+
+# 4. Guardamos los cambios
+db.session.commit()
+print("Actualización completada exitosamente.")
+
+# Salir del shell
+exit()
