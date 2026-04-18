@@ -1,12 +1,14 @@
-from flask import app, render_template, request, redirect, url_for, flash
+from flask import abort, app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import login_user, logout_user, current_user, login_required
 from urllib.parse import urlsplit # from werkzeug.urls import url_parse
-from models import db, User, Cliente, Ubicacion, Categoria
+from sqlalchemy import func, extract
+from models import db, User, Cliente, Ubicacion, Categoria, Recurrencia, Visita, Feriado, DetalleVisita
 from formularios import LoginForm
-from utilitarios import calcular_total
+from utilitarios import calcular_total, calcular_proximo_dia
 from mensajes import TEXTOS
 from functools import wraps
-from flask import abort
+from datetime import date, datetime, timedelta, time
+
 
 def init_routes(app):
 # SYSTEM USERS AND AUTHENTICATION
@@ -100,7 +102,7 @@ def init_routes(app):
 
         return render_template('usuario_editar.html', u=user_to_edit)
 
-    # HOME 
+# HOME 
     @app.route('/')
     @login_required
     def index():
@@ -122,7 +124,7 @@ def init_routes(app):
                 (Categoria.nombre.ilike(query_param)) # Coincidencia de categoría
             )
 
-        lista_clientes = base_query.all()
+        lista_clientes = base_query.order_by(Cliente.nombre).all()
         lista_categorias = Categoria.query.all()
 
         return render_template('clientes_lista.html', 
@@ -260,8 +262,300 @@ def init_routes(app):
     @app.route('/agendamientos')
     @login_required
     def agendamientos():
-        return "Module under construction"
+        from datetime import date, timedelta
+        hoy = date.today()
+        fin_semana = hoy + timedelta(days=7) # Definimos el rango de 7 días
+        
+        # Filtramos visitas en el rango de fechas y ordenamos por fecha
+        visitas_c1 = Visita.query.filter(
+            Visita.fecha >= hoy, 
+            Visita.fecha <= fin_semana, 
+            Visita.cuadrilla == 1
+        ).order_by(Visita.fecha.asc()).all()
+        
+        visitas_c2 = Visita.query.filter(
+            Visita.fecha >= hoy, 
+            Visita.fecha <= fin_semana, 
+            Visita.cuadrilla == 2
+        ).order_by(Visita.fecha.asc()).all()
+        
+        clientes = Cliente.query.order_by(Cliente.nombre).all()
+        
+        return render_template('agendamientos.html', 
+                            visitas_c1=visitas_c1, 
+                            visitas_c2=visitas_c2, 
+                            clientes=clientes,
+                            hoy=hoy)
 
+
+    @app.route('/crear-recurrencia', methods=['POST'])
+    @login_required
+    def crear_recurrencia():
+        # 1. Capturar datos del formulario modal
+        cliente_id = request.form.get('cliente_id')
+        ubicacion_id = request.form.get('ubicacion_id')
+        cuadrilla_id = request.form.get('cuadrilla_id')
+        dia_semana = int(request.form.get('dia_semana'))
+        servicio_elegido = request.form.get('servicio').upper() # Captura la elección manual del modal
+        
+        hora_str = request.form.get('hora_sugerida')
+        hora_obj = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
+
+        frecuencia = request.form.get('frecuencia')
+        dia1 = int(request.form.get('dia_semana'))  
+
+        try:
+            # 2. Crear el registro maestro de Recurrencia
+            nueva_regla = Recurrencia(
+                cliente_id=cliente_id,
+                ubicacion_id=ubicacion_id,
+                cuadrilla_id=cuadrilla_id,
+                dia_semana=dia_semana,
+                hora_sugerida=hora_obj,
+                servicio=servicio_elegido, 
+                frecuencia='Semanal',
+                activo=True
+            )
+            db.session.add(nueva_regla)
+            db.session.flush() # Genera el ID para la visita
+
+            # 3. Calcular la primera visita basada en el día de la semana elegido
+            hoy = date.today()
+            # dias_faltantes = (dia_semana - hoy.weekday() + 7) % 7
+
+            proxima_fecha = calcular_proximo_dia(date.today(), dia1)
+            
+            nueva_visita1 = Visita(
+                cliente_id=cliente_id,
+                ubicacion_id=ubicacion_id,
+                cuadrilla=cuadrilla_id,
+                fecha=proxima_fecha,
+                hora_sugerida=hora_obj,
+                servicio=servicio_elegido, # La visita hereda el servicio específico
+                estado='PENDIENTE',
+                recurrencia_id=nueva_regla.id
+            )
+            db.session.add(nueva_visita1)
+            
+            # Si es 2x semana, generamos la segunda visita de la misma semana
+            if frecuencia == 'SEMANAL_2X':
+                dia_secundario = int(request.form.get('segundo_dia'))
+                fecha_v2 = calcular_proximo_dia(date.today(), dia_secundario)
+                # Aseguramos que no se encimen si el feriado movió la fecha 1
+                if fecha_v2 <= proxima_fecha:
+                    fecha_v2 = proxima_fecha + timedelta(days=1)
+                    while not Feriado.es_laboral(fecha_v2):
+                        fecha_v2 += timedelta(days=1)
+                nueva_visita2 = Visita(
+                    cliente_id=cliente_id,
+                    ubicacion_id=ubicacion_id,
+                    cuadrilla=cuadrilla_id,
+                    fecha=fecha_v2,
+                    hora_sugerida=hora_obj,
+                    servicio=servicio_elegido, # La visita hereda el servicio específico
+                    estado='PENDIENTE',
+                    recurrencia_id=nueva_regla.id
+                )
+                db.session.add(nueva_visita2)
+
+            db.session.commit()
+            flash('Programación semanal creada con éxito', 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear programación: {str(e)}', 'danger')
+
+        return redirect(url_for('agendamientos'))    
+    
+    @app.route('/agendamientos/eliminar/<int:id>', methods=['POST'])
+    @login_required
+    def eliminar_visita(id):
+        visita = Visita.query.get_or_404(id)
+        try:
+            db.session.delete(visita)
+            db.session.commit()
+            flash("Visita eliminada correctamente.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error al eliminar la visita: {str(e)}", "danger")
+        
+        return redirect(url_for('agendamientos'))
+    
+    @app.route('/recurrencias')
+    @login_required
+    def lista_recurrencias():
+        # Obtenemos todas las recurrencias activas con los datos del cliente y ubicación
+        todas_recurrencias = Recurrencia.query.filter_by(activo=True).all()
+        return render_template('recurrencias_lista.html', recurrencias=todas_recurrencias)
+
+    @app.route('/recurrencias/eliminar/<int:id>', methods=['POST'])
+    @login_required
+    def eliminar_recurrencia(id):
+        regla = Recurrencia.query.get_or_404(id)
+        try:
+            # En lugar de borrar (delete), podemos desactivarla para mantener historial
+            regla.activo = False 
+            db.session.commit()
+            flash("Programación recurrente desactivada con éxito.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error al eliminar: {str(e)}", "danger")
+        
+        return redirect(url_for('lista_recurrencias'))
+    
+    @app.route('/crear-visita-esporadica', methods=['POST'])
+    @login_required
+    def crear_visita_esporadica():
+        cliente_id = request.form.get('cliente_id')
+        ubicacion_id = request.form.get('ubicacion_id')
+        cuadrilla_id = request.form.get('cuadrilla_id')
+        fecha_str = request.form.get('fecha') # Recibimos la fecha exacta
+        servicio = request.form.get('servicio').upper()
+        hora_str = request.form.get('hora_sugerida')
+        obs_str= request.form.get('observaciones', '').strip()
+    
+        try:
+            # Convertimos el string de la fecha a objeto date
+            fecha_obj = date.fromisoformat(fecha_str)
+            hora_obj = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
+            
+            nueva_visita = Visita(
+                cliente_id=cliente_id,
+                ubicacion_id=ubicacion_id,
+                cuadrilla=cuadrilla_id,
+                fecha=fecha_obj,
+                hora_sugerida=hora_obj,
+                servicio=servicio,
+                observaciones=obs_str,
+                estado='PENDIENTE',
+                recurrencia_id=None # Importante: No tiene regla asociada
+            )
+            db.session.add(nueva_visita)
+            db.session.commit()
+            flash('Visita esporádica programada exitosamente', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear visita: {str(e)}', 'danger')
+
+        return redirect(url_for('agendamientos'))
+    
+    @app.route('/api/visita/update-estado', methods=['POST'])
+    @login_required
+    def update_estado_visita():
+        data = request.get_json()
+        visita_id = data.get('visita_id')
+        nuevo_estado = data.get('nuevo_estado').upper()
+        observaciones = data.get('observaciones', '').strip()
+
+        if nuevo_estado == 'NO ASISTIO' and not observaciones:
+            return jsonify({
+                'status': 'error', 
+                'message': 'Debe ingresar una observación para marcar como No Asistió.'
+            }), 400
+        
+        visita = Visita.query.get_or_404(visita_id)
+        
+        try:
+            visita.estado = nuevo_estado
+            visita.observaciones = observaciones
+            db.session.commit()
+            return jsonify({'status': 'success', 'nuevo_estado': nuevo_estado})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+
+    @app.route('/visita/reagendar/<int:id>', methods=['POST'])
+    @login_required
+    def reagendar_visita(id):
+        visita = Visita.query.get_or_404(id)
+        try:
+            # Actualizamos los campos con los nuevos datos del modal
+            visita.fecha = date.fromisoformat(request.form.get('fecha'))
+            visita.cuadrilla = request.form.get('cuadrilla_id')
+            visita.servicio = request.form.get('servicio').upper()
+            visita.observaciones = request.form.get('observaciones')
+
+            # Opcional: Si agregaste el campo hora_sugerida
+            hora_str = request.form.get('hora_sugerida')
+            if hora_str:
+                visita.hora_sugerida = datetime.strptime(hora_str, '%H:%M').time()
+
+            visita.estado = 'PENDIENTE' # Al reagendar, vuelve a estar pendiente
+            db.session.commit()
+            flash("Visita reprogramada exitosamente", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error al reagendar: {str(e)}", "danger")
+        
+        return redirect(url_for('agendamientos'))
+    
+    @app.route('/visita/guardar-facturacion', methods=['POST'])
+    @login_required
+    def guardar_facturacion():
+        # 1. Obtener datos principales
+        visita_id = request.form.get('visita_id')
+        descripciones = request.form.getlist('desc[]')
+        cantidades = request.form.getlist('cant[]')
+        precios = request.form.getlist('precio[]')
+        estados_pago = request.form.getlist('pago_estado[]')
+        
+        visita = Visita.query.get_or_404(visita_id)
+        
+        try:
+            # 2. Limpiar detalles previos si existen (evita duplicados en re-edición)
+            DetalleVisita.query.filter_by(visita_id=visita_id).delete()
+            
+            # 3. Procesar cada ítem del formulario
+            for i in range(len(descripciones)):
+                # Validar que la descripción no esté vacía
+                if not descripciones[i].strip():
+                    continue
+                    
+                try:
+                    qty = float(cantidades[i]) if cantidades[i] else 1.0
+                    price = int(precios[i]) if precios[i] else 0
+                    subtotal = int(qty * price)
+                    
+                    nuevo_detalle = DetalleVisita(
+                        visita_id=visita_id,
+                        descripcion=descripciones[i].upper(),
+                        cantidad=qty,
+                        precio_unitario=price,
+                        total=subtotal,
+                        estado_pago=estados_pago[i], # 'PENDIENTE' o 'PAGADO'
+                        # Si el estado es PAGADO, podríamos capturar el método aquí
+                        # o dejarlo para una pantalla de recibos posterior
+                        metodo_pago=request.form.get('metodo_global') if estados_pago[i] == 'PAGADO' else None
+                    )
+                    db.session.add(nuevo_detalle)
+                except ValueError:
+                    continue # Saltar filas con datos numéricos corruptos
+
+            # 4. Actualizar estado de la visita
+            visita.estado = 'COMPLETADO'
+            db.session.commit()
+            
+            flash(f"Facturación de {visita.cliente.nombre} guardada correctamente.", "success")
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error al procesar la facturación: {str(e)}", "danger")
+            
+        return redirect(url_for('agendamientos'))
+
+    @app.route('/api/cliente-detalle/<int:id>')
+    @login_required
+    def api_cliente_detalle(id):
+        """
+        Ruta auxiliar para obtener el precio base del contrato del cliente
+        al abrir el modal de facturación.
+        """
+        cliente = Cliente.query.get_or_404(id)
+        return jsonify({
+            'nombre': cliente.nombre,
+            'tipo_contrato': cliente.tipo_contrato,
+            'tarifa_estandar': getattr(cliente, 'tarifa_mensual', 0) # Ajustar según tu modelo Cliente
+        })
 # AJUSTES MODULE
     @app.route('/ajustes')
     @login_required
@@ -273,6 +567,122 @@ def init_routes(app):
     @app.route('/facturacion')
     @login_required
     def facturacion():
-        return "Module facturacion under construction"
-    
+        filtro = request.args.get('filtro', 'pendientes')
+        query = DetalleVisita.query.join(Visita)
+        
+        # --- APLICAR FILTROS ---
+        today = datetime.today()
+        if filtro == 'mes':
+            query = query.filter(extract('month', DetalleVisita.date_created) == today.month,
+                                extract('year', DetalleVisita.date_created) == today.year)
+        elif filtro == 'año':
+            query = query.filter(extract('year', DetalleVisita.date_created) == today.year)
+        elif filtro == 'pendientes':
+            query = query.filter(DetalleVisita.estado_pago == 'PENDIENTE')
 
+        detalles = query.all()
+
+        # --- AGRUPAR POR CLIENTE ---
+        agrupados = {}
+        total_deuda_global = 0
+        total_cobrado_periodo = 0
+
+        for d in detalles:
+            c_id = d.visita.cliente_id
+            if c_id not in agrupados:
+                agrupados[c_id] = {
+                    'cliente_nombre': d.visita.cliente.nombre,
+                    'registros': [],
+                    'deuda_total': 0
+                }
+            
+            agrupados[c_id]['registros'].append(d)
+            
+            if d.estado_pago == 'PENDIENTE':
+                agrupados[c_id]['deuda_total'] += d.total
+                total_deuda_global += d.total
+            else:
+                total_cobrado_periodo += d.total
+
+        return render_template('facturacion.html', 
+                            agrupados_por_cliente=agrupados, 
+                            total_deuda_global=total_deuda_global,
+                            total_cobrado_periodo=total_cobrado_periodo)
+
+    @app.route('/facturacion/actualizar-pago/<int:id>', methods=['POST'])
+    @login_required
+    def actualizar_pago_item(id):
+        detalle = DetalleVisita.query.get_or_404(id)
+        data = request.get_json()
+        nuevo_estado = data.get('estado')
+        
+        detalle.estado_pago = nuevo_estado
+        detalle.metodo_pago = data.get('metodo')
+        
+        # Si el nuevo estado es PAGADO, guardamos la fecha de finalización
+        if nuevo_estado == 'PAGADO':
+            detalle.date_finished = datetime.now()
+        else:
+            detalle.date_finished = None # Por si se revierte a PENDIENTE
+            
+        db.session.commit()
+        return jsonify({"status": "success"})   
+    
+# API ENDPOINTS
+    @app.route('/api/ubicaciones/<int:cliente_id>')
+    @login_required
+    def get_ubicaciones_cliente(cliente_id):
+        ubicaciones = Ubicacion.query.filter_by(cliente_id=cliente_id).all()
+        return jsonify([{
+            'id': u.id,
+            'nombre': u.nombre_sucursal
+        } for u in ubicaciones])
+
+    @app.route('/api/cliente-detalle/<int:cliente_id>')
+    @login_required
+    def get_cliente_detalle(cliente_id):
+        # Esta ruta permite al modal saber qué contrato tiene el cliente por defecto
+        cliente = Cliente.query.get_or_404(cliente_id)
+        return jsonify({
+            'id': cliente.id,
+            'tipo_contrato': cliente.tipo_contrato.upper() # Asegura que el tipo de contrato se envíe en mayúsculas
+        })
+
+    @app.route('/api/visita/update-servicio', methods=['POST'])
+    @login_required
+    def update_servicio_visita():
+        # Permite cambiar el servicio directamente desde la tabla de 7 días
+        data = request.get_json()
+        visita = Visita.query.get(data.get('visita_id'))
+        
+        if visita:
+            visita.servicio = data.get('nuevo_servicio')
+            db.session.commit()
+            return jsonify({'status': 'ok'})
+        return jsonify({'status': 'error'}), 404
+    
+    @app.route('/api/cliente-detalle-por-visita/<int:visita_id>')
+    @login_required
+    def api_cliente_detalle_visita(visita_id):
+        visita = Visita.query.get_or_404(visita_id)
+        precio = getattr(visita.cliente, 'tarifa_mensual', 0) 
+        print(precio)
+        return jsonify({'precio_base': precio})
+    
+    @app.route('/api/facturacion/cobrar-cliente/<int:cliente_id>', methods=['POST'])
+    @login_required
+    def cobrar_cliente(cliente_id):
+        data = request.json
+        # Buscamos todos los detalles pendientes de este cliente a través de sus visitas
+        pendientes = DetalleVisita.query.join(Visita).filter(
+            Visita.cliente_id == cliente_id,
+            DetalleVisita.estado_pago == 'PENDIENTE'
+        ).all()
+        
+        for item in pendientes:
+            item.estado_pago = 'PAGADO'
+            item.metodo_pago = data.get('metodo', 'EFECTIVO')
+            item.date_finished = datetime.now()
+            
+        db.session.commit()
+        return jsonify({"status": "success", "items_cobrados": len(pendientes)})

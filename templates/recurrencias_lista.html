@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block main %}
+<style>
+    /* Consistencia con la tabla de agendamientos */
+    .table td {
+        vertical-align: middle !important;
+        border-top: 1px solid #f0f2f5;
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+
+    /* Estilo de los badges de día y cuadrilla */
+    .badge-day {
+        background-color: #f8f9fa;
+        color: #34495e;
+        border: 1px solid #d1d8e0;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        padding: 0.4em 0.8em;
+    }
+
+    .badge-cuadrilla {
+        background-color: #e3f2fd;
+        color: #0d47a1;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 0.4em 0.8em;
+    }
+
+    /* Encabezados de tabla minimalistas */
+    .thead-light th {
+        background-color: #f8f9fa !important;
+        text-transform: uppercase;
+        font-size: 0.65rem;
+        letter-spacing: 1px;
+        color: #6c757d;
+        border-bottom: 2px solid #dee2e6 !important;
+    }
+
+    .text-service-tag {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #495057;
+        background: #f1f3f5;
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm border">
+        <h2 class="h4 mb-0 text-dark">
+            <i class="fa-solid fa-clock-rotate-left text-secondary mr-2"></i>Reglas de Programación
+        </h2>
+        <a href="{{ url_for('agendamientos') }}" class="btn btn-outline-secondary btn-sm px-3">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Volver al Panel
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width: 25%;">Cliente</th>
+                        <th style="width: 20%;">Ubicación</th>
+                        <th class="text-center">Sugerencia Día/Hora</th>
+                        <th class="text-center">Asignación</th>
+                        <th>Tipo de Servicio</th>
+                        <th class="text-right">Gestión</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in recurrencias %}
+                    <tr>
+                        <td class="py-3">
+                            <div class="text-dark font-weight-bold" style="font-size: 0.9rem;">
+                                {{ r.cliente.nombre }}
+                            </div>
+                        </td>
+                        <td class="py-3">
+                            <div class="small text-muted d-flex align-items-center">
+                                <i class="fa-solid fa-location-dot mr-1 opacity-50"></i>
+                                {{ r.ubicacion.nombre_sucursal }}
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            {% set dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] %}
+                            <span class="badge badge-day shadow-sm">
+                                <i class="fa-regular fa-calendar mr-1"></i>{{ dias[r.dia_semana] }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-cuadrilla">
+                                CUADRILLA {{ r.cuadrilla_id }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-service-tag text-uppercase">
+                                {{ r.servicio }}
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+                                    Opciones
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                                    <form action="{{ url_for('eliminar_recurrencia', id=r.id) }}" method="POST" 
+                                          onsubmit="return confirm('¿Detener esta programación automática?');">
+                                        <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
+                                            <i class="fa-solid fa-stop-circle mr-2 opacity-75"></i>
+                                            <span class="small font-weight-bold">Detener Recurrencia</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted p-5">
+                            <i class="fa-solid fa-calendar-xmark fa-2x mb-3 d-block opacity-25"></i>
+                            No hay reglas de servicio configuradas actualmente.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

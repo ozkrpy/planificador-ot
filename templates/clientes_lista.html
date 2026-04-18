@@ -53,9 +53,14 @@
             </span>
         </div>
         {% if c.observaciones_detalladas %}
-        <div class="x-small text-muted italic mb-2" style="max-width: 400px; white-space: normal;">
+            <div class="x-small text-muted italic mb-2" style="max-width: 400px; white-space: normal;">
                 <i class="fa-solid fa-circle-info text-info fa-fw"></i> {{ c.observaciones_detalladas }}
             </div>
+        {% endif %}
+        {% if c.reglas_recurrencia %}
+            <span class="text-success"><i class="fa-solid fa-calendar-check"></i> Programado</span>
+        {% else %}
+            <span class="text-muted small"><i class="fa-solid fa-calendar-minus"></i> Sin agenda activa</span>
         {% endif %}
     </td>
     <td class="align-middle">

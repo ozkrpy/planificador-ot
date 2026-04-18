@@ -9,6 +9,16 @@ from mensajes import TEXTOS
 app = Flask(__name__)
 app.config.from_object(Config)
 
+@app.template_filter('number_format')
+def number_format(value):
+    if value is None:
+        return "0"
+    try:
+        # Formato para Guaraníes: puntos como separadores de miles, sin decimales
+        return "{:,.0f}".format(value).replace(",", ".")
+    except (ValueError, TypeError):
+        return value
+    
 db.init_app(app)
 migrate = Migrate(app, db)
 

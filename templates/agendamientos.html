@@ -1,0 +1,862 @@
+{% extends "base.html" %}
+
+{% block main %}
+<style>
+
+    /* Color Verde Profesional (Forest Green) */
+    .btn-dark-green {
+        background-color: #2c5e50;
+        color: white;
+        border: 1px solid #234b40;
+    }
+    .btn-dark-green:hover {
+        background-color: #1e4137;
+        color: white;
+    }
+
+    /* Ajuste para el botón de Reglas (Azul Serio) */
+    .btn-outline-info {
+        color: #34495e;
+        border-color: #34495e;
+    }
+    .btn-outline-info:hover {
+        background-color: #34495e;
+        color: white;
+    }
+
+    /* Estilo general para botones con tono serio */
+    .btn-sm {
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+    }
+
+    /* Alineación global de celdas */
+    .table td {
+        vertical-align: middle !important;
+        border-top: 1px solid #f0f2f5;
+    }
+
+    /* Selector de servicio con apariencia profesional */
+    .custom-select-serious {
+        height: 31px !important;
+        font-size: 0.75rem !important;
+        font-weight: 600;
+        color: #495057;
+        border: 1px solid #d1d8e0;
+        border-radius: 4px;
+        background-color: #f8f9fa;
+        text-transform: uppercase;
+    }
+
+    /* Botones de estado con colores menos "chillones" */
+    .status-btn {
+        height: 31px;
+        font-size: 0.65rem !important;
+        letter-spacing: 0.5px;
+        border: 1px solid transparent;
+        text-transform: uppercase;
+    }
+
+    .btn-warning-soft {
+        background-color: #fff8e1;
+        color: #f57c00;
+        border-color: #ffe0b2;
+    }
+
+    .btn-success-soft {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border-color: #c8e6c9;
+    }
+
+    /* Resaltado de hoy */
+    .table-today {
+        background-color: #fffdf0 !important;
+        border-left: 4px solid #fbc02d;
+    }
+
+    /* Limpieza de encabezados */
+    .thead-light th {
+        background-color: #f8f9fa !important;
+        text-transform: uppercase;
+        font-size: 0.65rem;
+        letter-spacing: 1px;
+        color: #6c757d;
+        border-bottom: 2px solid #dee2e6 !important;
+    }
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm border">
+    <h2 class="h4 mb-0 text-dark">
+        <i class="fa-solid fa-calendar-check text-secondary mr-2"></i>Gestión de Operaciones
+    </h2>
+    <div class="btn-group">
+        <button class="btn btn-outline-secondary btn-sm px-3 mr-2" data-toggle="modal" data-target="#modalVisitaEsporadica">
+            <i class="fa-solid fa-bolt mr-1"></i> Agendar visita no planeada
+        </button>
+        
+        <a href="{{ url_for('lista_recurrencias') }}" class="btn btn-outline-info btn-sm px-3 mr-2">
+            <i class="fa-solid fa-gears mr-1"></i> Config. Agendas de Clientes
+        </a>
+        
+        <button class="btn btn-dark-green btn-sm px-3" data-toggle="modal" data-target="#modalNuevaRecurrencia">
+            <i class="fa-solid fa-plus-circle mr-1"></i> Nueva Recurrencia
+        </button>
+    </div>
+</div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">CUADRILLA 1</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light small">
+                            <tr>
+                                <th>Fecha</th> 
+                                <th>Cliente / Ubicación</th>
+                                <th>Servicio</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in visitas_c1 %}
+                            <tr class="align-middle {% if v.fecha == hoy %}table-today{% endif %}">
+                                <td class="text-center py-3" style="width: 15%;">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <small class="text-uppercase font-weight-bold text-muted mb-0" style="font-size: 0.65rem;">
+                                            {{ v.fecha.strftime('%a') }}
+                                        </small>
+                                        <span class="h6 mb-0 text-dark">{{ v.fecha.strftime('%d/%m') }}</span>
+                                        {% if v.hora_sugerida %}
+                                        <span class="badge badge-light border mt-1 text-secondary py-1 px-2" style="font-size: 0.7rem;">
+                                            <i class="fa-regular fa-clock mr-1"></i>{{ v.hora_sugerida.strftime('%H:%M') }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+
+                                <td class="py-3">
+                                    <div class="text-dark font-weight-bold" style="font-size: 0.9rem;">{{ v.cliente.nombre }}</div>
+                                    <div class="small text-muted d-flex align-items-center">
+                                        <i class="fa-solid fa-location-dot mr-1 opacity-50"></i>{{ v.ubicacion.nombre_sucursal }}
+                                    </div>
+                                    {% if v.observaciones %}
+                                    <div class="mt-1">
+                                        <small class="badge badge-light text-info border border-info" title="{{ v.observaciones }}">
+                                            <i class="fa-solid fa-comment-dots mr-1"></i> Nota: {{ v.observaciones[:30] }}{% if v.observaciones|length > 30 %}...{% endif %}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </td>
+
+                                <td class="py-3" style="width: 25%;">
+                                    <select class="form-control form-control-sm custom-select-serious select-servicio" 
+                                            data-visita-id="{{ v.id }}">
+                                        <option value="PISCINA Y JARDÍN" {% if v.servicio|upper == 'PISCINA Y JARDÍN' %}selected{% endif %}>PISCINA Y JARDÍN</option>
+                                        <option value="SOLO PISCINA" {% if v.servicio|upper == 'SOLO PISCINA' %}selected{% endif %}>SOLO PISCINA</option>
+                                        <option value="SOLO JARDÍN" {% if v.servicio|upper == 'SOLO JARDÍN' %}selected{% endif %}>SOLO JARDÍN</option>
+                                    </select>
+                                </td>
+
+                                <td class="text-right py-3" style="width: 15%;">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-block dropdown-toggle font-weight-bold status-btn 
+                                                {% if v.estado == 'PENDIENTE' %}btn-warning-soft
+                                                {% elif v.estado == 'COMPLETADO' %}btn-success-soft
+                                                {% else %}btn-secondary-soft{% endif %}" 
+                                                type="button" id="statusBtn{{ v.id }}" data-toggle="dropdown">
+                                            {{ v.estado }}
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                                            <a class="dropdown-item py-2 d-flex align-items-center btn-finalizar-visita" 
+                                            href="javascript:void(0)"
+                                            data-id="{{ v.id }}"
+                                            data-cliente="{{ v.cliente.nombre }}"
+                                            data-servicio="{{ v.servicio }}">
+                                                <i class="fa-solid fa-check-circle text-success mr-2"></i>
+                                                <span class="small font-weight-bold">Marcar completado</span>
+                                            </a>
+                                            <a class="dropdown-item btn-reagendar" 
+                                            href="#"
+                                            data-id="{{ v.id }}"
+                                            data-cliente="{{ v.cliente.nombre }}"
+                                            data-fecha="{{ v.fecha }}"
+                                            data-cuadrilla="{{ v.cuadrilla }}"
+                                            data-servicio="{{ v.servicio }}"
+                                            data-hora="{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}">
+                                                <i class="fa-solid fa-calendar-day text-info mr-2"></i>
+                                                <span class="small font-weight-bold">Reagendar</span>
+                                            </a>
+                                            <a class="dropdown-item py-2 d-flex align-items-center" href="#"
+                                            onclick="cambiarEstadoConNota('{{ v.id }}', 'NO ASISTIO', true)">
+                                                <i class="fa-solid fa-circle-xmark text-danger mr-2"></i>
+                                                <span class="small font-weight-bold">No asistió</span>
+                                            </a>
+                                            <div class="dropdown-divider"></div>
+
+                                            <form action="{{ url_for('eliminar_visita', id=v.id) }}" method="POST" 
+                                                onsubmit="return confirm('¿Está seguro de eliminar esta visita del registro?');">
+                                                <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
+                                                    <i class="fa-solid fa-trash-can mr-2 opacity-75"></i>
+                                                    <span class="small font-weight-bold">Eliminar registro</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                                <tr><td colspan="4" class="text-center text-muted p-4">No hay visitas programadas para los próximos 7 días</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">CUADRILLA 2</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light small">
+                            <tr>
+                                <th>Fecha</th> 
+                                <th>Cliente / Ubicación</th>
+                                <th>Servicio</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in visitas_c2 %}
+                            <tr class="align-middle {% if v.fecha == hoy %}table-today{% endif %}">
+                                <td class="text-center py-3" style="width: 15%;">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <small class="text-uppercase font-weight-bold text-muted mb-0" style="font-size: 0.65rem;">
+                                            {{ v.fecha.strftime('%a') }}
+                                        </small>
+                                        <span class="h6 mb-0 text-dark">{{ v.fecha.strftime('%d/%m') }}</span>
+                                        {% if v.hora_sugerida %}
+                                        <span class="badge badge-light border mt-1 text-secondary py-1 px-2" style="font-size: 0.7rem;">
+                                            <i class="fa-regular fa-clock mr-1"></i>{{ v.hora_sugerida.strftime('%H:%M') }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+
+                                <td class="py-3">
+                                    <div class="text-dark font-weight-bold" style="font-size: 0.9rem;">{{ v.cliente.nombre }}</div>
+                                    <div class="small text-muted d-flex align-items-center">
+                                        <i class="fa-solid fa-location-dot mr-1 opacity-50"></i>{{ v.ubicacion.nombre_sucursal }}
+                                    </div>
+                                </td>
+
+                                <td class="py-3" style="width: 25%;">
+                                    <select class="form-control form-control-sm custom-select-serious select-servicio" 
+                                            data-visita-id="{{ v.id }}">
+                                        <option value="PISCINA Y JARDÍN" {% if v.servicio|upper == 'PISCINA Y JARDÍN' %}selected{% endif %}>PISCINA Y JARDÍN</option>
+                                        <option value="SOLO PISCINA" {% if v.servicio|upper == 'SOLO PISCINA' %}selected{% endif %}>SOLO PISCINA</option>
+                                        <option value="SOLO JARDÍN" {% if v.servicio|upper == 'SOLO JARDÍN' %}selected{% endif %}>SOLO JARDÍN</option>
+                                    </select>
+                                </td>
+
+                                <td class="text-right py-3" style="width: 15%;">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-block dropdown-toggle font-weight-bold status-btn 
+                                                {% if v.estado == 'PENDIENTE' %}btn-warning-soft
+                                                {% elif v.estado == 'COMPLETADO' %}btn-success-soft
+                                                {% else %}btn-secondary-soft{% endif %}" 
+                                                type="button" id="statusBtn{{ v.id }}" data-toggle="dropdown">
+                                            {{ v.estado }}
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                                            <a class="dropdown-item py-2 d-flex align-items-center btn-finalizar-visita" 
+                                            href="javascript:void(0)"
+                                            data-id="{{ v.id }}"
+                                            data-cliente="{{ v.cliente.nombre }}"
+                                            data-servicio="{{ v.servicio }}">
+                                                <i class="fa-solid fa-check-circle text-success mr-2"></i>
+                                                <span class="small font-weight-bold">Marcar completado</span>
+                                            </a>
+                                            <a class="dropdown-item btn-reagendar" 
+                                            href="#"
+                                            data-id="{{ v.id }}"
+                                            data-cliente="{{ v.cliente.nombre }}"
+                                            data-fecha="{{ v.fecha }}"
+                                            data-cuadrilla="{{ v.cuadrilla }}"
+                                            data-servicio="{{ v.servicio }}"
+                                            data-hora="{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}">
+                                                <i class="fa-solid fa-calendar-day text-info mr-2"></i>
+                                                <span class="small font-weight-bold">Reagendar</span>
+                                            </a>
+                                            <a class="dropdown-item py-2 d-flex align-items-center" href="#"
+                                            onclick="cambiarEstadoConNota('{{ v.id }}', 'NO ASISTIO', true)">
+                                                <i class="fa-solid fa-circle-xmark text-warning mr-2"></i>
+                                                <span class="small font-weight-bold">No asistió</span>
+                                            </a>
+                                            <div class="dropdown-divider"></div>
+
+                                            <form action="{{ url_for('eliminar_visita', id=v.id) }}" method="POST" 
+                                                onsubmit="return confirm('¿Está seguro de eliminar esta visita del registro?');">
+                                                <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
+                                                    <i class="fa-solid fa-trash-can mr-2 opacity-75"></i>
+                                                    <span class="small font-weight-bold">Eliminar registro</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                                <tr><td colspan="4" class="text-center text-muted p-4">No hay visitas programadas para los próximos 7 días</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNuevaRecurrencia" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <form action="{{ url_for('crear_recurrencia') }}" method="POST" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title text-secondary"><i class="fa-solid fa-calendar-plus mr-2"></i>Nueva Recurrencia</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="small font-weight-bold text-uppercase">Cliente</label>
+                    <select name="cliente_id" id="select_cliente" class="form-control select-cliente-trigger" required>
+                        <option value="">-- Seleccione Cliente --</option>
+                        {% for c in clientes %}
+                            <option value="{{ c.id }}">{{ c.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="small font-weight-bold text-uppercase">Ubicación / Sucursal</label>
+                    <select name="ubicacion_id" id="select_ubicacion" class="form-control" required disabled>
+                        <option value="">-- Elija primero un cliente --</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Cuadrilla</label>
+                            <select name="cuadrilla_id" class="form-control">
+                                <option value="1">Cuadrilla 1</option>
+                                <option value="2">Cuadrilla 2</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Servicio</label>
+                            <select name="servicio" class="form-control" id="select_servicio">
+                                <option value="PISCINA Y JARDÍN">PISCINA Y JARDÍN</option>
+                                <option value="SOLO PISCINA">SOLO PISCINA</option>
+                                <option value="SOLO JARDÍN">SOLO JARDÍN</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Día de Visita</label>
+                            <select name="dia_semana" class="form-control">
+                                <option value="0">Lunes</option> <option value="1">Martes</option>
+                                <option value="2">Miércoles</option> <option value="3">Jueves</option>
+                                <option value="4">Viernes</option> <option value="5">Sábado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Hora Sugerida</label>
+                            <select name="hora_sugerida" class="form-control">
+                                {% for h in range(7, 19) %}
+                                    <option value="{{ "%02d:00" | format(h) }}">{{ "%02d:00" | format(h) }}</option>
+                                    <option value="{{ "%02d:30" | format(h) }}">{{ "%02d:30" | format(h) }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Frecuencia del Servicio</label>
+                            <select name="frecuencia" id="select_frecuencia" class="form-control" onchange="toggleFrecuencia()">
+                                <option value="SEMANAL">SEMANAL (1x)</option>
+                                <option value="SEMANAL_2X">PISCINA 2X SEMANA</option>
+                                <option value="QUINCENAL">CADA 15 DÍAS</option>
+                                <option value="MENSUAL">MENSUAL</option>
+                            </select>
+                        </div>
+
+                        <div id="div_segundo_dia" style="display:none;">
+                            <div class="form-group">
+                                <label class="small font-weight-bold text-uppercase text-primary">Segundo Día (Regla +2 días)</label>
+                                <select name="segundo_dia" id="select_segundo_dia" class="form-control border-primary">
+                                    </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-sm btn-dark-green px-4">Guardar Regla</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalVisitaEsporadica" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <form action="{{ url_for('crear_visita_esporadica') }}" method="POST" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title text-secondary"><i class="fa-solid fa-bolt mr-2 text-warning"></i>Visita Única</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="small font-weight-bold text-uppercase">Cliente</label>
+                    <select name="cliente_id" id="select_cliente_esp" class="form-control select-cliente-trigger" required>
+                        <option value="">-- Seleccione Cliente --</option>
+                        {% for c in clientes %}
+                            <option value="{{ c.id }}">{{ c.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="small font-weight-bold text-uppercase">Ubicación</label>
+                    <select name="ubicacion_id" id="select_ubicacion_esp" class="form-control" required disabled>
+                        <option value="">-- Primero elija cliente --</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Fecha</label>
+                            <input type="date" name="fecha" class="form-control" required value="{{ hoy }}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Hora Sugerida</label>
+                            <select name="hora_sugerida" class="form-control">
+                                {% for h in range(7, 19) %}
+                                    <option value="{{ "%02d:00" | format(h) }}">{{ "%02d:00" | format(h) }}</option>
+                                    <option value="{{ "%02d:30" | format(h) }}">{{ "%02d:30" | format(h) }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Cuadrilla</label>
+                            <select name="cuadrilla_id" class="form-control">
+                                <option value="1">Cuadrilla 1</option>
+                                <option value="2">Cuadrilla 2</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Servicio</label>
+                            <select name="servicio" id="select_servicio_esp" class="form-control">
+                                <option value="PISCINA Y JARDÍN">PISCINA Y JARDÍN</option>
+                                <option value="SOLO PISCINA">SOLO PISCINA</option>
+                                <option value="SOLO JARDÍN">SOLO JARDÍN</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Observaciones especiales</label>
+                            <textarea name="observaciones" class="form-control" rows="2" placeholder="Notas adicionales para la cuadrilla..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="submit" class="btn btn-sm btn-primary px-4">Agendar Ahora</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalReagendar" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <form id="formReagendar" method="POST" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title text-secondary"><i class="fa-solid fa-calendar-day mr-2 text-info"></i>Reagendar Servicio</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted mb-4">Modifique los detalles para reprogramar la visita de <strong id="reagendar_cliente_nombre"></strong>.</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Nueva Fecha</label>
+                            <input type="date" name="fecha" id="reagendar_fecha" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Hora</label>
+                            <select name="hora_sugerida" id="reagendar_hora" class="form-control">
+                                {% for h in range(7, 19) %}
+                                    <option value="{{ "%02d:00" | format(h) }}">{{ "%02d:00" | format(h) }}</option>
+                                    <option value="{{ "%02d:30" | format(h) }}">{{ "%02d:30" | format(h) }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Cuadrilla</label>
+                            <select name="cuadrilla_id" id="reagendar_cuadrilla" class="form-control">
+                                <option value="1">Cuadrilla 1</option>
+                                <option value="2">Cuadrilla 2</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Servicio</label>
+                            <select name="servicio" id="reagendar_servicio" class="form-control">
+                                <option value="PISCINA Y JARDÍN">PISCINA Y JARDÍN</option>
+                                <option value="SOLO PISCINA">SOLO PISCINA</option>
+                                <option value="SOLO JARDÍN">SOLO JARDÍN</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Observaciones especiales</label>
+                            <textarea name="observaciones" class="form-control" rows="2" placeholder="Notas adicionales para la cuadrilla..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-sm btn-info px-4">Actualizar Visita</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalFinalizarVisita" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <form action="{{ url_for('guardar_facturacion') }}" method="POST" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title h6 font-weight-bold">DETALLE DE FACTURACIÓN: <span id="nombre_cliente_factura"></span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            
+            <div class="modal-body bg-light">
+                <input type="hidden" name="visita_id" id="factura_visita_id">
+                
+                <div class="table-responsive bg-white rounded shadow-sm">
+                    <table class="table table-sm mb-0" id="tabla_items_factura">
+                        <thead class="thead-dark small">
+                            <tr>
+                                <th style="width: 40%">DESCRIPCIÓN / SERVICIO</th>
+                                <th style="width: 10%">CANT.</th>
+                                <th style="width: 15%">PRECIO UNIT.</th>
+                                <th style="width: 15%">SUBTOTAL</th>
+                                <th style="width: 15%">ESTADO</th>
+                                <th style="width: 5%"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>filas</tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-3">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarFilaFactura()">
+                        <i class="fa-solid fa-plus-circle mr-1"></i> Agregar Ítem Facturable
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-white">
+                <div class="mr-auto">
+                    <h5 class="mb-0 text-muted">TOTAL A FACTURAR: <span class="text-dark font-weight-bold" id="gran_total">0</span> Gs.</h5>
+                </div>
+                <button type="submit" class="btn btn-success px-5 font-weight-bold">GUARDAR Y FINALIZAR VISITA</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.classList.contains('select-cliente-trigger')) {
+        const clienteId = e.target.value;
+        const isEsp = e.target.id.includes('esp');
+        const targetUbi = document.getElementById(isEsp ? 'select_ubicacion_esp' : 'select_ubicacion');
+        const targetSrv = document.getElementById(isEsp ? 'select_servicio_esp' : 'select_servicio');
+
+        if (!clienteId) return;
+
+        fetch(`${window.location.origin}/api/ubicaciones/${clienteId}`)
+            .then(r => r.json())
+            .then(data => {
+                targetUbi.disabled = false;
+                targetUbi.innerHTML = data.map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
+            });
+
+        fetch(`${window.location.origin}/api/cliente-detalle/${clienteId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.tipo_contrato) targetSrv.value = data.tipo_contrato.toUpperCase();
+            });
+    }
+
+    if (e.target && e.target.classList.contains('select-servicio')) {
+        fetch(`${window.location.origin}/api/visita/update-servicio`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                visita_id: e.target.dataset.visitaId,
+                nuevo_servicio: e.target.value
+            })
+        });
+    }
+});
+
+function cambiarEstado(visitaId, estado) {
+    fetch(`${window.location.origin}/api/visita/update-estado`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            visita_id: visitaId,
+            nuevo_estado: estado
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Actualiza el texto y color del botón dinámicamente
+            const btn = document.getElementById(`statusBtn${visitaId}`);
+            btn.innerText = data.nuevo_estado;
+            
+            // Limpiar clases previas y aplicar la nueva según el estado
+            btn.className = 'btn btn-sm btn-block dropdown-toggle font-weight-bold status-btn';
+            if (estado === 'COMPLETADO') btn.classList.add('btn-success-soft');
+            else if (estado === 'PENDIENTE') btn.classList.add('btn-warning-soft');
+            else btn.classList.add('btn-secondary-soft');
+            
+            // Opcional: Notificación visual simple
+            console.log(`Visita ${visitaId} actualizada a ${estado}`);
+        }
+    })
+    .catch(err => alert("Error al actualizar el estado"));
+}
+
+function cambiarEstadoConNota(visitaId, estado, esObligatorio) {
+    let mensaje = `Ingrese observaciones para el estado ${estado}:`;
+    if (esObligatorio) mensaje = `[OBLIGATORIO] ¿Por qué la cuadrilla no asistió?`;
+
+    const nota = prompt(mensaje);
+
+    // Si es obligatorio y cancela o deja vacío, no hace nada
+    if (esObligatorio && (!nota || nota.trim() === "")) {
+        alert("Para marcar 'No Asistió' debe proveer una explicación.");
+        return;
+    }
+
+    fetch(`${window.location.origin}/api/visita/update-estado`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            visita_id: visitaId,
+            nuevo_estado: estado,
+            observaciones: nota || ""
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload(); // Recargamos para ver los cambios y badges de notas
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(err => alert("Error de conexión al servidor"));
+}
+
+function prepararReagendar(id, cliente, fecha, cuadrilla, servicio, hora) {
+    // Seteamos el action del form dinámicamente
+    document.getElementById('formReagendar').action = `/visita/reagendar/${id}`;
+    
+    // Cargamos los datos en los campos del modal
+    document.getElementById('reagendar_cliente_nombre').innerText = cliente;
+    document.getElementById('reagendar_fecha').value = fecha;
+    document.getElementById('reagendar_cuadrilla').value = cuadrilla;
+    document.getElementById('reagendar_servicio').value = servicio;
+    if(hora) document.getElementById('reagendar_hora').value = hora;
+
+    // Abrimos el modal manualmente
+    $('#modalReagendar').modal('show');
+}
+
+function toggleFrecuencia() {
+    const frec = document.getElementById('select_frecuencia').value;
+    const div2do = document.getElementById('div_segundo_dia');
+    div2do.style.display = (frec === 'SEMANAL_2X') ? 'block' : 'none';
+}
+
+document.getElementsByName('dia_semana')[0].addEventListener('change', function() {
+    const dia1 = parseInt(this.value);
+    const select2 = document.getElementById('select_segundo_dia');
+    const diasLabel = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    
+    select2.innerHTML = '';
+    // Regla: día1 + 3 (para que haya 2 días libres en el medio)
+    // Ejemplo: Lunes(0) + 3 = Jueves(3). 
+    for (let i = dia1 + 3; i <= 5; i++) {
+        let opt = document.createElement('option');
+        opt.value = i;
+        opt.innerHTML = diasLabel[i];
+        select2.appendChild(opt);
+    }
+    
+    if (select2.options.length === 0) {
+        select2.innerHTML = '<option>No hay días hábiles suficientes</option>';
+    }
+});
+
+$('.btn-reagendar').on('click', function() {
+    const d = $(this).data();
+    prepararReagendar(d.id, d.cliente, d.fecha, d.cuadrilla, d.servicio, d.hora);
+});
+
+function recalcular() {
+    let granTotal = 0;
+    $('.fila-item').each(function() {
+        const cant = parseFloat($(this).find('.val-cant').val()) || 0;
+        const precio = parseFloat($(this).find('.val-precio').val()) || 0;
+        const subtotal = cant * precio;
+        $(this).find('.val-subtotal').text(subtotal.toLocaleString());
+        granTotal += subtotal;
+    });
+    $('#gran_total').text(granTotal.toLocaleString());
+}
+
+function prepararFinalizacion(id, cliente, servicio, precioBase) {
+    $('#factura_visita_id').val(id);
+    $('#nombre_cliente_factura').text(cliente);
+    $('#tabla_items_factura tbody').empty();
+    
+    // Agregamos el servicio principal automáticamente
+    agregarFilaFactura(servicio, precioBase);
+    
+    $('#modalFinalizarVisita').modal('show');
+}
+
+$(document).on('click', '.btn-finalizar-visita', function() {
+    const d = $(this).data();
+    console.log("Botón presionado. Datos capturados:", d);
+    
+    if (!d.id) {
+        console.error("Error: El botón no tiene data-id. Verifica el HTML.");
+        return;
+    }
+    
+    abrirFacturacion(d.id, d.cliente, d.servicio);
+});
+
+function abrirFacturacion(id, cliente, servicio) {
+    console.log(`Iniciando abrirFacturacion para ID: ${id}, Cliente: ${cliente}`);
+
+    // Referencias a elementos del DOM para verificar si existen
+    const modal = $('#modalFinalizarVisita');
+    const inputId = $('#factura_visita_id');
+    const spanCliente = $('#nombre_cliente_factura');
+
+    if (modal.length === 0) {
+        console.error("Error Crítico: No se encontró el elemento #modalFinalizarVisita en el DOM.");
+        return;
+    }
+
+    // Seteamos datos básicos
+    inputId.val(id);
+    spanCliente.text(cliente);
+    $('#tabla_items_factura tbody').empty();
+    
+    console.log("Llamando a la API para obtener tarifa...");
+
+    fetch(`${window.location.origin}/api/cliente-detalle-por-visita/${id}`)
+        .then(r => {
+            console.log("Respuesta de la API recibida. Status:", r.status);
+            return r.json();
+        })
+        .then(data => {
+            console.log("Datos de la API procesados:", data);
+            
+            // Agregamos la fila
+            agregarFilaFactura(servicio, data.precio_base || 0);
+            
+            console.log("Intentando mostrar el modal con jQuery .modal('show')");
+            console.log(modal);
+            modal.modal('show');
+        })
+        .catch(err => {
+            console.warn("La API falló o no existe, procediendo con precio 0:", err);
+            agregarFilaFactura(servicio, 0);
+            modal.modal('show');
+        });
+}
+
+function agregarFilaFactura(desc = "", precio = 0) {
+    console.log(`Agregando fila: ${desc} - Precio: ${precio}`);
+    const row = `
+        <tr class="fila-item">
+            <td><input type="text" name="desc[]" class="form-control form-control-sm border-0" value="${desc}" required></td>
+            <td><input type="number" name="cant[]" class="form-control form-control-sm border-0 text-center val-cant" value="1" onchange="recalcular()"></td>
+            <td><input type="number" name="precio[]" class="form-control form-control-sm border-0 val-precio" value="${precio}" onchange="recalcular()"></td>
+            <td class="font-weight-bold text-right py-2 val-subtotal">0</td>
+            <td>
+                <select name="pago_estado[]" class="form-control form-control-sm border-0">
+                    <option value="PENDIENTE">PENDIENTE</option>
+                    <option value="PAGADO">PAGADO</option>
+                </select>
+            </td>
+            <td><button type="button" class="btn btn-sm text-danger" onclick="$(this).closest('tr').remove(); recalcular();">&times;</button></td>
+        </tr>`;
+    $('#tabla_items_factura tbody').append(row);
+    recalcular();
+}
+
+</script>
+{% endblock %}
