@@ -90,244 +90,214 @@
 
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm border">
-    <h2 class="h4 mb-0 text-dark">
-        <i class="fa-solid fa-calendar-check text-secondary mr-2"></i>Gestión de Operaciones
-    </h2>
-    <div class="btn-group">
-        <button class="btn btn-outline-secondary btn-sm px-3 mr-2" data-toggle="modal" data-target="#modalVisitaEsporadica">
-            <i class="fa-solid fa-bolt mr-1"></i> Agendar visita no planeada
-        </button>
-        
-        <a href="{{ url_for('lista_recurrencias') }}" class="btn btn-outline-info btn-sm px-3 mr-2">
-            <i class="fa-solid fa-gears mr-1"></i> Config. Agendas de Clientes
-        </a>
-        
-        <button class="btn btn-dark-green btn-sm px-3" data-toggle="modal" data-target="#modalNuevaRecurrencia">
-            <i class="fa-solid fa-plus-circle mr-1"></i> Nueva Recurrencia
-        </button>
+        <h2 class="h4 mb-0 text-dark">
+            <i class="fa-solid fa-calendar-check text-secondary mr-2"></i>Gestión de Operaciones
+        </h2>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary btn-sm px-3 mr-2" data-toggle="modal" data-target="#modalVisitaEsporadica">
+                <i class="fa-solid fa-bolt mr-1"></i> Agendar visita no planeada
+            </button>
+            
+            <a href="{{ url_for('lista_recurrencias') }}" class="btn btn-outline-info btn-sm px-3 mr-2">
+                <i class="fa-solid fa-gears mr-1"></i> Config. Agendas de Clientes
+            </a>
+            
+            <button class="btn btn-dark-green btn-sm px-3" data-toggle="modal" data-target="#modalNuevaRecurrencia">
+                <i class="fa-solid fa-plus-circle mr-1"></i> Nueva Recurrencia
+            </button>
+        </div>
     </div>
-</div>
     <div class="row">
         <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">CUADRILLA 1</h5>
+            <h5 class="bg-primary text-white p-2 rounded-top mb-0 shadow-sm font-weight-bold text-center small">CUADRILLA 1</h5>
+            {% for label, visitas in semanas_c1 %}
+            <div class="week-section mb-4">
+                <div class="bg-light py-1 px-3 border-left border-right border-bottom text-muted font-weight-bold x-small text-uppercase" style="letter-spacing: 1px;">
+                    {{ label }}
                 </div>
-                <div class="card-body p-0">
-                    <table class="table table-hover mb-0">
-                        <thead class="thead-light small">
-                            <tr>
-                                <th>Fecha</th> 
-                                <th>Cliente / Ubicación</th>
-                                <th>Servicio</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for v in visitas_c1 %}
-                            <tr class="align-middle {% if v.fecha == hoy %}table-today{% endif %}">
-                                <td class="text-center py-3" style="width: 15%;">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <small class="text-uppercase font-weight-bold text-muted mb-0" style="font-size: 0.65rem;">
-                                            {{ v.fecha.strftime('%a') }}
-                                        </small>
-                                        <span class="h6 mb-0 text-dark">{{ v.fecha.strftime('%d/%m') }}</span>
-                                        {% if v.hora_sugerida %}
-                                        <span class="badge badge-light border mt-1 text-secondary py-1 px-2" style="font-size: 0.7rem;">
-                                            <i class="fa-regular fa-clock mr-1"></i>{{ v.hora_sugerida.strftime('%H:%M') }}
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-
-                                <td class="py-3">
-                                    <div class="text-dark font-weight-bold" style="font-size: 0.9rem;">{{ v.cliente.nombre }}</div>
-                                    <div class="small text-muted d-flex align-items-center">
-                                        <i class="fa-solid fa-location-dot mr-1 opacity-50"></i>{{ v.ubicacion.nombre_sucursal }}
-                                    </div>
-                                    {% if v.observaciones %}
-                                    <div class="mt-1">
-                                        <small class="badge badge-light text-info border border-info" title="{{ v.observaciones }}">
-                                            <i class="fa-solid fa-comment-dots mr-1"></i> Nota: {{ v.observaciones[:30] }}{% if v.observaciones|length > 30 %}...{% endif %}
-                                        </small>
-                                    </div>
-                                    {% endif %}
-                                </td>
-
-                                <td class="py-3" style="width: 25%;">
-                                    <select class="form-control form-control-sm custom-select-serious select-servicio" 
-                                            data-visita-id="{{ v.id }}">
-                                        <option value="PISCINA Y JARDÍN" {% if v.servicio|upper == 'PISCINA Y JARDÍN' %}selected{% endif %}>PISCINA Y JARDÍN</option>
-                                        <option value="SOLO PISCINA" {% if v.servicio|upper == 'SOLO PISCINA' %}selected{% endif %}>SOLO PISCINA</option>
-                                        <option value="SOLO JARDÍN" {% if v.servicio|upper == 'SOLO JARDÍN' %}selected{% endif %}>SOLO JARDÍN</option>
-                                    </select>
-                                </td>
-
-                                <td class="text-right py-3" style="width: 15%;">
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-block dropdown-toggle font-weight-bold status-btn 
-                                                {% if v.estado == 'PENDIENTE' %}btn-warning-soft
-                                                {% elif v.estado == 'COMPLETADO' %}btn-success-soft
-                                                {% else %}btn-secondary-soft{% endif %}" 
-                                                type="button" id="statusBtn{{ v.id }}" data-toggle="dropdown">
-                                            {{ v.estado }}
-                                        </button>
-                                        <div class="dropdown-menu dropdown-menu-right shadow border-0">
-                                            <a class="dropdown-item py-2 d-flex align-items-center btn-finalizar-visita" 
-                                            href="javascript:void(0)"
-                                            data-id="{{ v.id }}"
-                                            data-cliente="{{ v.cliente.nombre }}"
-                                            data-servicio="{{ v.servicio }}">
-                                                <i class="fa-solid fa-check-circle text-success mr-2"></i>
-                                                <span class="small font-weight-bold">Marcar completado</span>
-                                            </a>
-                                            <a class="dropdown-item btn-reagendar" 
-                                            href="#"
-                                            data-id="{{ v.id }}"
-                                            data-cliente="{{ v.cliente.nombre }}"
-                                            data-fecha="{{ v.fecha }}"
-                                            data-cuadrilla="{{ v.cuadrilla }}"
-                                            data-servicio="{{ v.servicio }}"
-                                            data-hora="{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}">
-                                                <i class="fa-solid fa-calendar-day text-info mr-2"></i>
-                                                <span class="small font-weight-bold">Reagendar</span>
-                                            </a>
-                                            <a class="dropdown-item py-2 d-flex align-items-center" href="#"
-                                            onclick="cambiarEstadoConNota('{{ v.id }}', 'NO ASISTIO', true)">
-                                                <i class="fa-solid fa-circle-xmark text-danger mr-2"></i>
-                                                <span class="small font-weight-bold">No asistió</span>
-                                            </a>
-                                            <div class="dropdown-divider"></div>
-
-                                            <form action="{{ url_for('eliminar_visita', id=v.id) }}" method="POST" 
-                                                onsubmit="return confirm('¿Está seguro de eliminar esta visita del registro?');">
-                                                <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
-                                                    <i class="fa-solid fa-trash-can mr-2 opacity-75"></i>
-                                                    <span class="small font-weight-bold">Eliminar registro</span>
-                                                </button>
-                                            </form>
+                <div class="card shadow-sm border-0 rounded-0">
+                    <div class="card-body p-0">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="thead-light small">
+                                <tr>
+                                    <th style="width: 15%">FECHA</th> 
+                                    <th style="width: 45%">CLIENTE</th>
+                                    <th style="width: 25%">SERVICIO</th>
+                                    <th style="width: 15%" class="text-right">ESTADO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for v in visitas %}
+                                <tr class="align-middle {% if v.fecha == hoy %}table-today{% endif %}">
+                                    <td class="text-center py-2">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <small class="text-uppercase font-weight-bold text-muted mb-0" style="font-size: 0.6rem;">{{ v.fecha.strftime('%a') }}</small>
+                                            <span class="font-weight-bold text-dark">{{ v.fecha.strftime('%d/%m') }}</span>
                                         </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% else %}
-                                <tr><td colspan="4" class="text-center text-muted p-4">No hay visitas programadas para los próximos 7 días</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                    </td>
+                                    <td class="py-2">
+                                        <div class="text-dark font-weight-bold small">{{ v.cliente.nombre }}</div>
+                                        <div class="x-small text-muted"><i class="fa-solid fa-location-dot mr-1"></i>{{ v.ubicacion.nombre_sucursal }}</div>
+                                    </td>
+                                    <td class="py-2">
+                                        <select class="form-control form-control-sm custom-select-serious select-servicio" data-visita-id="{{ v.id }}">
+                                            <option value="PISCINA Y JARDÍN" {% if v.servicio == 'PISCINA Y JARDÍN' %}selected{% endif %}>PISCINA Y JARDÍN</option>
+                                            <option value="SOLO PISCINA" {% if v.servicio == 'SOLO PISCINA' %}selected{% endif %}>SOLO PISCINA</option>
+                                            <option value="SOLO JARDÍN" {% if v.servicio == 'SOLO JARDÍN' %}selected{% endif %}>SOLO JARDÍN</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-right py-2" style="width: 15%;">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-block dropdown-toggle font-weight-bold status-btn 
+                                                    {% if v.estado == 'PENDIENTE' %}btn-warning-soft
+                                                    {% elif v.estado == 'COMPLETADO' %}btn-success-soft
+                                                    {% else %}btn-secondary-soft{% endif %}" 
+                                                    type="button" id="statusBtn{{ v.id }}" data-toggle="dropdown">
+                                                {{ v.estado }}
+                                            </button>
+                                            <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                                                <a class="dropdown-item py-2 d-flex align-items-center btn-finalizar-visita" 
+                                                href="javascript:void(0)"
+                                                data-id="{{ v.id }}"
+                                                data-cliente="{{ v.cliente.nombre }}"
+                                                data-servicio="{{ v.servicio }}">
+                                                    <i class="fa-solid fa-check-circle text-success mr-2"></i>
+                                                    <span class="small font-weight-bold">Marcar completado</span>
+                                                </a>
+                                                <a class="dropdown-item btn-reagendar" 
+                                                href="#"
+                                                data-id="{{ v.id }}"
+                                                data-cliente="{{ v.cliente.nombre }}"
+                                                data-fecha="{{ v.fecha }}"
+                                                data-cuadrilla="{{ v.cuadrilla }}"
+                                                data-servicio="{{ v.servicio }}"
+                                                data-hora="{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}">
+                                                    <i class="fa-solid fa-calendar-day text-info mr-2"></i>
+                                                    <span class="small font-weight-bold">Reagendar</span>
+                                                </a>
+                                                <a class="dropdown-item py-2 d-flex align-items-center" href="#"
+                                                onclick="cambiarEstadoConNota('{{ v.id }}', 'NO ASISTIO', true)">
+                                                    <i class="fa-solid fa-circle-xmark text-danger mr-2"></i>
+                                                    <span class="small font-weight-bold">No asistió</span>
+                                                </a>
+                                                <div class="dropdown-divider"></div>
+
+                                                <form action="{{ url_for('eliminar_visita', id=v.id) }}" method="POST" 
+                                                    onsubmit="return confirm('¿Está seguro de eliminar esta visita del registro?');">
+                                                    <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
+                                                        <i class="fa-solid fa-trash-can mr-2 opacity-75"></i>
+                                                        <span class="small font-weight-bold">Eliminar registro</span>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    {% else %}
+                                        <tr><div class="text-center text-muted p-4 small">No hay visitas programadas</div></tr>
+                                    {% endfor %}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div> <!-- card body -->
+                </div> <!-- cierre de card body --> 
+            </div> <!-- cierre de week -->
+            {% endfor %}
         </div>
-
+        
         <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">CUADRILLA 2</h5>
+            <h5 class="bg-primary text-white p-2 rounded-top mb-0 shadow-sm font-weight-bold text-center small">CUADRILLA 1</h5>
+            {% for label, visitas in semanas_c2 %}
+            <div class="week-section mb-4">
+                <div class="bg-light py-1 px-3 border-left border-right border-bottom text-muted font-weight-bold x-small text-uppercase" style="letter-spacing: 1px;">
+                    {{ label }}
                 </div>
-                <div class="card-body p-0">
-                    <table class="table table-hover mb-0">
-                        <thead class="thead-light small">
-                            <tr>
-                                <th>Fecha</th> 
-                                <th>Cliente / Ubicación</th>
-                                <th>Servicio</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for v in visitas_c2 %}
-                            <tr class="align-middle {% if v.fecha == hoy %}table-today{% endif %}">
-                                <td class="text-center py-3" style="width: 15%;">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <small class="text-uppercase font-weight-bold text-muted mb-0" style="font-size: 0.65rem;">
-                                            {{ v.fecha.strftime('%a') }}
-                                        </small>
-                                        <span class="h6 mb-0 text-dark">{{ v.fecha.strftime('%d/%m') }}</span>
-                                        {% if v.hora_sugerida %}
-                                        <span class="badge badge-light border mt-1 text-secondary py-1 px-2" style="font-size: 0.7rem;">
-                                            <i class="fa-regular fa-clock mr-1"></i>{{ v.hora_sugerida.strftime('%H:%M') }}
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-
-                                <td class="py-3">
-                                    <div class="text-dark font-weight-bold" style="font-size: 0.9rem;">{{ v.cliente.nombre }}</div>
-                                    <div class="small text-muted d-flex align-items-center">
-                                        <i class="fa-solid fa-location-dot mr-1 opacity-50"></i>{{ v.ubicacion.nombre_sucursal }}
-                                    </div>
-                                    {% if v.observaciones %}
-                                    <div class="mt-1">
-                                        <small class="badge badge-light text-info border border-info" title="{{ v.observaciones }}">
-                                            <i class="fa-solid fa-comment-dots mr-1"></i> Nota: {{ v.observaciones[:30] }}{% if v.observaciones|length > 30 %}...{% endif %}
-                                        </small>
-                                    </div>
-                                    {% endif %}
-                                </td>
-
-                                <td class="py-3" style="width: 25%;">
-                                    <select class="form-control form-control-sm custom-select-serious select-servicio" 
-                                            data-visita-id="{{ v.id }}">
-                                        <option value="PISCINA Y JARDÍN" {% if v.servicio|upper == 'PISCINA Y JARDÍN' %}selected{% endif %}>PISCINA Y JARDÍN</option>
-                                        <option value="SOLO PISCINA" {% if v.servicio|upper == 'SOLO PISCINA' %}selected{% endif %}>SOLO PISCINA</option>
-                                        <option value="SOLO JARDÍN" {% if v.servicio|upper == 'SOLO JARDÍN' %}selected{% endif %}>SOLO JARDÍN</option>
-                                    </select>
-                                </td>
-
-                                <td class="text-right py-3" style="width: 15%;">
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-block dropdown-toggle font-weight-bold status-btn 
-                                                {% if v.estado == 'PENDIENTE' %}btn-warning-soft
-                                                {% elif v.estado == 'COMPLETADO' %}btn-success-soft
-                                                {% else %}btn-secondary-soft{% endif %}" 
-                                                type="button" id="statusBtn{{ v.id }}" data-toggle="dropdown">
-                                            {{ v.estado }}
-                                        </button>
-                                        <div class="dropdown-menu dropdown-menu-right shadow border-0">
-                                            <a class="dropdown-item py-2 d-flex align-items-center btn-finalizar-visita" 
-                                            href="javascript:void(0)"
-                                            data-id="{{ v.id }}"
-                                            data-cliente="{{ v.cliente.nombre }}"
-                                            data-servicio="{{ v.servicio }}">
-                                                <i class="fa-solid fa-check-circle text-success mr-2"></i>
-                                                <span class="small font-weight-bold">Marcar completado</span>
-                                            </a>
-                                            <a class="dropdown-item btn-reagendar" 
-                                            href="#"
-                                            data-id="{{ v.id }}"
-                                            data-cliente="{{ v.cliente.nombre }}"
-                                            data-fecha="{{ v.fecha }}"
-                                            data-cuadrilla="{{ v.cuadrilla }}"
-                                            data-servicio="{{ v.servicio }}"
-                                            data-hora="{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}">
-                                                <i class="fa-solid fa-calendar-day text-info mr-2"></i>
-                                                <span class="small font-weight-bold">Reagendar</span>
-                                            </a>
-                                            <a class="dropdown-item py-2 d-flex align-items-center" href="#"
-                                            onclick="cambiarEstadoConNota('{{ v.id }}', 'NO ASISTIO', true)">
-                                                <i class="fa-solid fa-circle-xmark text-danger mr-2"></i>
-                                                <span class="small font-weight-bold">No asistió</span>
-                                            </a>
-                                            <div class="dropdown-divider"></div>
-
-                                            <form action="{{ url_for('eliminar_visita', id=v.id) }}" method="POST" 
-                                                onsubmit="return confirm('¿Está seguro de eliminar esta visita del registro?');">
-                                                <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
-                                                    <i class="fa-solid fa-trash-can mr-2 opacity-75"></i>
-                                                    <span class="small font-weight-bold">Eliminar registro</span>
-                                                </button>
-                                            </form>
+                <div class="card shadow-sm border-0 rounded-0">
+                    <div class="card-body p-0">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="thead-light small">
+                                <tr>
+                                    <th style="width: 15%">FECHA</th> 
+                                    <th style="width: 45%">CLIENTE</th>
+                                    <th style="width: 25%">SERVICIO</th>
+                                    <th style="width: 15%" class="text-right">ESTADO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for v in visitas %}
+                                <tr class="align-middle {% if v.fecha == hoy %}table-today{% endif %}">
+                                    <td class="text-center py-2">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <small class="text-uppercase font-weight-bold text-muted mb-0" style="font-size: 0.6rem;">{{ v.fecha.strftime('%a') }}</small>
+                                            <span class="font-weight-bold text-dark">{{ v.fecha.strftime('%d/%m') }}</span>
                                         </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% else %}
-                                <tr><td colspan="4" class="text-center text-muted p-4">No hay visitas programadas para los próximos 7 días</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                    </td>
+                                    <td class="py-2">
+                                        <div class="text-dark font-weight-bold small">{{ v.cliente.nombre }}</div>
+                                        <div class="x-small text-muted"><i class="fa-solid fa-location-dot mr-1"></i>{{ v.ubicacion.nombre_sucursal }}</div>
+                                    </td>
+                                    <td class="py-2">
+                                        <select class="form-control form-control-sm custom-select-serious select-servicio" data-visita-id="{{ v.id }}">
+                                            <option value="PISCINA Y JARDÍN" {% if v.servicio == 'PISCINA Y JARDÍN' %}selected{% endif %}>PISCINA Y JARDÍN</option>
+                                            <option value="SOLO PISCINA" {% if v.servicio == 'SOLO PISCINA' %}selected{% endif %}>SOLO PISCINA</option>
+                                            <option value="SOLO JARDÍN" {% if v.servicio == 'SOLO JARDÍN' %}selected{% endif %}>SOLO JARDÍN</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-right py-2" style="width: 15%;">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-block dropdown-toggle font-weight-bold status-btn 
+                                                    {% if v.estado == 'PENDIENTE' %}btn-warning-soft
+                                                    {% elif v.estado == 'COMPLETADO' %}btn-success-soft
+                                                    {% else %}btn-secondary-soft{% endif %}" 
+                                                    type="button" id="statusBtn{{ v.id }}" data-toggle="dropdown">
+                                                {{ v.estado }}
+                                            </button>
+                                            <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                                                <a class="dropdown-item py-2 d-flex align-items-center btn-finalizar-visita" 
+                                                href="javascript:void(0)"
+                                                data-id="{{ v.id }}"
+                                                data-cliente="{{ v.cliente.nombre }}"
+                                                data-servicio="{{ v.servicio }}">
+                                                    <i class="fa-solid fa-check-circle text-success mr-2"></i>
+                                                    <span class="small font-weight-bold">Marcar completado</span>
+                                                </a>
+                                                <a class="dropdown-item btn-reagendar" 
+                                                href="#"
+                                                data-id="{{ v.id }}"
+                                                data-cliente="{{ v.cliente.nombre }}"
+                                                data-fecha="{{ v.fecha }}"
+                                                data-cuadrilla="{{ v.cuadrilla }}"
+                                                data-servicio="{{ v.servicio }}"
+                                                data-hora="{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}">
+                                                    <i class="fa-solid fa-calendar-day text-info mr-2"></i>
+                                                    <span class="small font-weight-bold">Reagendar</span>
+                                                </a>
+                                                <a class="dropdown-item py-2 d-flex align-items-center" href="#"
+                                                onclick="cambiarEstadoConNota('{{ v.id }}', 'NO ASISTIO', true)">
+                                                    <i class="fa-solid fa-circle-xmark text-danger mr-2"></i>
+                                                    <span class="small font-weight-bold">No asistió</span>
+                                                </a>
+                                                <div class="dropdown-divider"></div>
+
+                                                <form action="{{ url_for('eliminar_visita', id=v.id) }}" method="POST" 
+                                                    onsubmit="return confirm('¿Está seguro de eliminar esta visita del registro?');">
+                                                    <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
+                                                        <i class="fa-solid fa-trash-can mr-2 opacity-75"></i>
+                                                        <span class="small font-weight-bold">Eliminar registro</span>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    {% else %}
+                                        <tr><div class="text-center text-muted p-4 small">No hay visitas programadas</div></tr>
+                                    {% endfor %}
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div> <!-- card body -->
+                </div> <!-- cierre de card body --> 
+            </div> <!-- cierre de week -->
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -411,11 +381,14 @@
                             </select>
                         </div>
 
-                        <div id="div_segundo_dia" style="display:none;">
-                            <div class="form-group">
-                                <label class="small font-weight-bold text-uppercase text-primary">Segundo Día (Regla +2 días)</label>
-                                <select name="segundo_dia" id="select_segundo_dia" class="form-control border-primary">
+                        <div id="div_segundo_dia" style="display:none; margin-top: 15px;">
+                            <div class="form-group mb-0 p-2 border rounded bg-light">
+                                <label class="small font-weight-bold text-uppercase text-primary mb-1">
+                                    <i class="fa-solid fa-calendar-plus mr-1"></i> Segundo Día (Regla +2 días)
+                                </label>
+                                <select name="segundo_dia" id="select_segundo_dia" class="form-control form-control-sm border-primary font-weight-bold">
                                     </select>
+                                <small class="text-muted" style="font-size: 0.65rem;">* Ajustado automáticamente según feriados y domingos.</small>
                             </div>
                         </div>
                     </div>
@@ -626,6 +599,45 @@
 
 {% block scripts %}
 <script>
+const feriadosLista = {{ feriados_json | safe }};
+
+/**
+ * Calcula el segundo día saltando domingos y feriados
+ * @param {string} fechaBaseStr - Fecha en formato YYYY-MM-DD
+ */
+function calcularSegundoDia(fechaBaseStr) {
+    if (!fechaBaseStr) return;
+
+    let fecha = new Date(fechaBaseStr + 'T00:00:00');
+    let diasSumados = 0;
+    
+    // Regla de +2 días hábiles
+    while (diasSumados < 2) {
+        fecha.setDate(fecha.getDate() + 1);
+        
+        let diaSemana = fecha.getDay(); // 0 es Domingo
+        let fechaISO = fecha.toISOString().split('T')[0];
+        
+        // Si no es domingo y no está en la lista de feriados, contamos el día
+        if (diaSemana !== 0 && !feriadosLista.includes(fechaISO)) {
+            diasSumados++;
+        }
+    }
+
+    // Poblar el selector
+    const select = document.getElementById('select_segundo_dia');
+    const fechaFinal = fecha.toISOString().split('T')[0];
+    
+    // Formato legible para el usuario (DD/MM/YYYY)
+    const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const fechaLegible = fecha.toLocaleDateString('es-PY', opciones).toUpperCase();
+
+    select.innerHTML = `<option value="${fechaFinal}">${fechaLegible}</option>`;
+    
+    // Mostrar el div con una pequeña animación (si usas jQuery)
+    $('#div_segundo_dia').fadeIn();
+}
+
 document.addEventListener('change', function(e) {
     if (e.target && e.target.classList.contains('select-cliente-trigger')) {
         const clienteId = e.target.value;
@@ -741,6 +753,9 @@ function toggleFrecuencia() {
     const frec = document.getElementById('select_frecuencia').value;
     const div2do = document.getElementById('div_segundo_dia');
     div2do.style.display = (frec === 'SEMANAL_2X') ? 'block' : 'none';
+    const fechaSeleccionada = this.value;
+    calcularSegundoDia(fechaSeleccionada);
+
 }
 
 document.getElementsByName('dia_semana')[0].addEventListener('change', function() {

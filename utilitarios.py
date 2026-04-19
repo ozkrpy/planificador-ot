@@ -1,5 +1,24 @@
 from datetime import timedelta
 from models import Feriado
+from collections import defaultdict
+
+def agrupar_por_semana(visitas):
+    """
+    Organiza una lista de visitas en un diccionario donde la clave es el rango
+    de la semana (Lunes a Domingo) y el valor es la lista de visitas.
+    """
+    semanas = defaultdict(list)
+    for v in visitas:
+        # v.fecha.weekday() devuelve 0 para Lunes, 6 para Domingo
+        inicio_semana = v.fecha - timedelta(days=v.fecha.weekday())
+        fin_semana = inicio_semana + timedelta(days=6)
+        
+        # Etiqueta profesional para la sección
+        label = f"SEMANA DEL {inicio_semana.strftime('%d/%m')} AL {fin_semana.strftime('%d/%m')}"
+        semanas[label].append(v)
+    
+    # Ordenamos las semanas cronológicamente por la fecha de la primera visita
+    return sorted(semanas.items(), key=lambda x: x[1][0].fecha)
 
 def calcular_total(cantidad, precio_unitario):
     """Calculates total price based on quantity and unit price."""

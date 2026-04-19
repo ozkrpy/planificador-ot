@@ -1,13 +1,14 @@
-from flask import abort, app, flash, jsonify, redirect, render_template, request, url_for
+from flask import abort, app, flash, json, jsonify, redirect, render_template, request, url_for
 from flask_login import login_user, logout_user, current_user, login_required
 from urllib.parse import urlsplit # from werkzeug.urls import url_parse
 from sqlalchemy import func, extract
 from models import db, User, Cliente, Ubicacion, Categoria, Recurrencia, Visita, Feriado, DetalleVisita
 from formularios import LoginForm
-from utilitarios import calcular_total, calcular_proximo_dia
+from utilitarios import calcular_total, calcular_proximo_dia, agrupar_por_semana
 from mensajes import TEXTOS
 from functools import wraps
 from datetime import date, datetime, timedelta, time
+from collections import defaultdict
 
 
 def init_routes(app):
@@ -262,30 +263,55 @@ def init_routes(app):
     @app.route('/agendamientos')
     @login_required
     def agendamientos():
+
         from datetime import date, timedelta
         hoy = date.today()
         fin_semana = hoy + timedelta(days=7) # Definimos el rango de 7 días
         
+        feriados = Feriado.query.all()
+        # Creamos una lista de strings 'YYYY-MM-DD'
+        feriados_list = [f.fecha.strftime('%Y-%m-%d') for f in feriados if f.no_laboral]
+
+        # 1. Traer visitas de Cuadrilla 1 (desde hoy en adelante)
+        query_c1 = Visita.query.filter(
+            Visita.cuadrilla == '1',
+            Visita.fecha >= hoy,
+            Visita.estado != 'CANCELADO'
+        ).order_by(Visita.fecha.asc())
+
+        # 2. Traer visitas de Cuadrilla 2 (desde hoy en adelante)
+        query_c2 = Visita.query.filter(
+            Visita.cuadrilla == '2',
+            Visita.fecha >= hoy,
+            Visita.estado != 'CANCELADO'
+        ).order_by(Visita.fecha.asc())
+
+        # 3. Aplicar la agrupación
+        semanas_c1 = agrupar_por_semana(query_c1.all())
+        semanas_c2 = agrupar_por_semana(query_c2.all())
+
+
         # Filtramos visitas en el rango de fechas y ordenamos por fecha
-        visitas_c1 = Visita.query.filter(
-            Visita.fecha >= hoy, 
-            Visita.fecha <= fin_semana, 
-            Visita.cuadrilla == 1
-        ).order_by(Visita.fecha.asc()).all()
+        # visitas_c1 = Visita.query.filter(
+        #     Visita.fecha >= hoy, 
+        #     Visita.fecha <= fin_semana, 
+        #     Visita.cuadrilla == 1
+        # ).order_by(Visita.fecha.asc()).all()
         
-        visitas_c2 = Visita.query.filter(
-            Visita.fecha >= hoy, 
-            Visita.fecha <= fin_semana, 
-            Visita.cuadrilla == 2
-        ).order_by(Visita.fecha.asc()).all()
+        # visitas_c2 = Visita.query.filter(
+        #     Visita.fecha >= hoy, 
+        #     Visita.fecha <= fin_semana, 
+        #     Visita.cuadrilla == 2
+        # ).order_by(Visita.fecha.asc()).all()
         
         clientes = Cliente.query.order_by(Cliente.nombre).all()
         
         return render_template('agendamientos.html', 
-                            visitas_c1=visitas_c1, 
-                            visitas_c2=visitas_c2, 
+                            semanas_c1=semanas_c1, 
+                            semanas_c2=semanas_c2, 
                             clientes=clientes,
-                            hoy=hoy)
+                            hoy=hoy,
+                            feriados_json=json.dumps(feriados_list))
 
 
     @app.route('/crear-recurrencia', methods=['POST'])
@@ -721,7 +747,6 @@ def init_routes(app):
     def api_cliente_detalle_visita(visita_id):
         visita = Visita.query.get_or_404(visita_id)
         precio = getattr(visita.cliente, 'tarifa_mensual', 0) 
-        print(precio)
         return jsonify({'precio_base': precio})
     
     @app.route('/api/facturacion/cobrar-cliente/<int:cliente_id>', methods=['POST'])
