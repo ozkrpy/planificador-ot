@@ -2,6 +2,7 @@
 venv/
 env/
 __pycache__/
+migrations/
 *.pyc
 
 # Base de datos local

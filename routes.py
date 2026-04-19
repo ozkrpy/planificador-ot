@@ -498,7 +498,8 @@ def init_routes(app):
         cantidades = request.form.getlist('cant[]')
         precios = request.form.getlist('precio[]')
         estados_pago = request.form.getlist('pago_estado[]')
-        
+        metodos_pago = request.form.getlist('metodo_pago_item[]')
+
         visita = Visita.query.get_or_404(visita_id)
         
         try:
@@ -523,9 +524,9 @@ def init_routes(app):
                         precio_unitario=price,
                         total=subtotal,
                         estado_pago=estados_pago[i], # 'PENDIENTE' o 'PAGADO'
-                        # Si el estado es PAGADO, podríamos capturar el método aquí
-                        # o dejarlo para una pantalla de recibos posterior
-                        metodo_pago=request.form.get('metodo_global') if estados_pago[i] == 'PAGADO' else None
+                        # Si el estado es PAGADO, elegir el metodo de pago; si es PENDIENTE, dejarlo en None
+                        metodo_pago=metodos_pago[i] if estados_pago[i] == 'PAGADO' else None,
+                        date_finished=datetime.now() if estados_pago[i] == 'PAGADO' else None
                     )
                     db.session.add(nuevo_detalle)
                 except ValueError:
@@ -561,7 +562,44 @@ def init_routes(app):
     @login_required
     def parametrico():
         usuarios = User.query.all()
-        return render_template('ajustes.html', usuarios=usuarios)
+        feriados = Feriado.query.order_by(Feriado.fecha.asc()).all() # Añadir esto
+        return render_template('ajustes.html', usuarios=usuarios, feriados=feriados)
+    
+    # --- FERIADOS ---
+    @app.route('/ajustes/feriado/guardar', methods=['POST'])
+    @login_required
+    @admin_required
+    def guardar_feriado():
+        id_feriado = request.form.get('feriado_id')
+        fecha_str = request.form.get('fecha')
+        descripcion = request.form.get('descripcion').upper()
+        no_laboral = True if request.form.get('no_laboral') else False
+        
+        
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        
+        if id_feriado:
+            f = Feriado.query.get(id_feriado)
+            f.no_laboral = no_laboral
+            f.fecha = fecha_obj
+            f.descripcion = descripcion
+        else: # Nuevo feriado
+            nuevo_f = Feriado(fecha=fecha_obj, descripcion=descripcion)
+            db.session.add(nuevo_f)
+        
+        db.session.commit()
+        flash("Feriado actualizado", "success")
+        return redirect(url_for('parametrico'))
+
+    @app.route('/ajustes/feriado/eliminar/<int:id>')
+    @login_required
+    @admin_required
+    def eliminar_feriado(id):
+        f = Feriado.query.get_or_404(id)
+        db.session.delete(f)
+        db.session.commit()
+        flash("Feriado eliminado", "info")
+        return redirect(url_for('parametrico'))
 
 # FACTURACION MODULE
     @app.route('/facturacion')
@@ -583,22 +621,39 @@ def init_routes(app):
         detalles = query.all()
 
         # --- AGRUPAR POR CLIENTE ---
+        # Dentro de def facturacion():
         agrupados = {}
-        total_deuda_global = 0
-        total_cobrado_periodo = 0
+        total_deuda_global = 0      
+        total_cobrado_periodo = 0   
 
         for d in detalles:
             c_id = d.visita.cliente_id
+            v_id = d.visita.id
+            
             if c_id not in agrupados:
                 agrupados[c_id] = {
                     'cliente_nombre': d.visita.cliente.nombre,
-                    'registros': [],
+                    'visitas': {}, # Cambiamos registros por un dict de visitas
                     'deuda_total': 0
                 }
             
-            agrupados[c_id]['registros'].append(d)
+            # Dentro de la lógica de agrupación en routes.py
+            if v_id not in agrupados[c_id]['visitas']:
+                agrupados[c_id]['visitas'][v_id] = {
+                    'fecha': d.visita.fecha,
+                    'servicio_principal': d.visita.servicio,
+                    'detalles_items': [], # CAMBIADO: de 'items' a 'detalles_items'
+                    'total_visita': 0,
+                    'pendiente_visita': 0
+                }
+
+            agrupados[c_id]['visitas'][v_id]['detalles_items'].append(d) # CAMBIADO AQUÍ TAMBIÉN
+            
+            # agrupados[c_id]['visitas'][v_id]['items'].append(d)
+            agrupados[c_id]['visitas'][v_id]['total_visita'] += d.total
             
             if d.estado_pago == 'PENDIENTE':
+                agrupados[c_id]['visitas'][v_id]['pendiente_visita'] += d.total
                 agrupados[c_id]['deuda_total'] += d.total
                 total_deuda_global += d.total
             else:
@@ -609,26 +664,26 @@ def init_routes(app):
                             total_deuda_global=total_deuda_global,
                             total_cobrado_periodo=total_cobrado_periodo)
 
-    @app.route('/facturacion/actualizar-pago/<int:id>', methods=['POST'])
-    @login_required
-    def actualizar_pago_item(id):
-        detalle = DetalleVisita.query.get_or_404(id)
-        data = request.get_json()
-        nuevo_estado = data.get('estado')
+#     @app.route('/facturacion/actualizar-pago/<int:id>', methods=['POST'])
+#     @login_required
+#     def actualizar_pago_item(id):
+#         detalle = DetalleVisita.query.get_or_404(id)
+#         data = request.get_json()
+#         nuevo_estado = data.get('estado')
         
-        detalle.estado_pago = nuevo_estado
-        detalle.metodo_pago = data.get('metodo')
+#         detalle.estado_pago = nuevo_estado
+#         detalle.metodo_pago = data.get('metodo')
         
-        # Si el nuevo estado es PAGADO, guardamos la fecha de finalización
-        if nuevo_estado == 'PAGADO':
-            detalle.date_finished = datetime.now()
-        else:
-            detalle.date_finished = None # Por si se revierte a PENDIENTE
+#         # Si el nuevo estado es PAGADO, guardamos la fecha de finalización
+#         if nuevo_estado == 'PAGADO':
+#             detalle.date_finished = datetime.now()
+#         else:
+#             detalle.date_finished = None # Por si se revierte a PENDIENTE
             
-        db.session.commit()
-        return jsonify({"status": "success"})   
+#         db.session.commit()
+#         return jsonify({"status": "success"})   
     
-# API ENDPOINTS
+# # API ENDPOINTS
     @app.route('/api/ubicaciones/<int:cliente_id>')
     @login_required
     def get_ubicaciones_cliente(cliente_id):
@@ -686,3 +741,34 @@ def init_routes(app):
             
         db.session.commit()
         return jsonify({"status": "success", "items_cobrados": len(pendientes)})
+    
+    # En el endpoint de actualizar_pago_item
+    @app.route('/api/facturacion/actualizar-pago-item/<int:id>', methods=['POST'])
+    @login_required
+    def actualizar_pago_item(id):
+        detalle = DetalleVisita.query.get_or_404(id)
+        data = request.get_json()
+        
+        detalle.estado_pago = 'PAGADO'
+        detalle.metodo_pago = data.get('metodo', 'EFECTIVO')
+        detalle.date_finished = datetime.now() # Guardamos la fecha de hoy
+        
+        db.session.commit()
+        return jsonify({"status": "success"})
+
+    @app.route('/api/facturacion/cobrar-visita/<int:visita_id>', methods=['POST'])
+    @login_required
+    def cobrar_visita(visita_id):
+        data = request.get_json()
+        metodo = data.get('metodo', 'EFECTIVO')
+        
+        # Buscamos todos los ítems pendientes de esta visita específica
+        detalles = DetalleVisita.query.filter_by(visita_id=visita_id, estado_pago='PENDIENTE').all()
+        
+        for d in detalles:
+            d.estado_pago = 'PAGADO'
+            d.metodo_pago = metodo
+            d.date_finished = datetime.now()
+            
+        db.session.commit()
+        return jsonify({"status": "success", "count": len(detalles)})

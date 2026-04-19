@@ -2,179 +2,284 @@
 
 {% block main %}
 <style>
-    .card-cliente {
-        border-radius: 12px;
-        transition: transform 0.2s;
-    }
-    .card-cliente:hover {
-        transform: translateY(-3px);
-    }
-    .bg-success-soft { background-color: #e6f4ea; color: #1e7e34; }
-    .bg-warning-soft { background-color: #fff8e1; color: #f57f17; }
-    .bg-danger-soft { background-color: #fce8e6; color: #d93025; }
+    /* Clonando paleta de Agendamientos */
+    body { background-color: #f8f9fa; }
     
-    .status-pill {
-        font-size: 0.7rem;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
+    .btn-dark-green {
+        background-color: #2c5e50;
+        color: white;
+        border: 1px solid #234b40;
+    }
+    .btn-dark-green:hover {
+        background-color: #1e4137;
+        color: white;
     }
 
-    .filter-btn {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+    .btn-outline-dark-green {
+        color: #2c5e50;
+        border-color: #2c5e50;
     }
 
-    .total-amount {
-        font-family: 'Monaco', 'Consolas', monospace;
-        font-weight: 700;
+    .card-cliente {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     }
+
+    .card-header-custom {
+        background-color: #2c5e50;
+        color: white;
+        border-radius: 8px 8px 0 0 !important;
+        padding: 0.75rem 1.25rem;
+    }
+
+    /* Estilos de tabla internos para que coincidan con la principal */
+    .table-factura td {
+        font-size: 0.85rem;
+        vertical-align: middle !important;
+        padding: 0.5rem;
+    }
+
+    .bg-light-container {
+        background-color: #f0f2f5;
+        border-radius: 15px;
+        padding: 20px;
+    }
+
+    .filter-btn-active {
+        background-color: #2c5e50 !important;
+        color: white !important;
+    }
+
+    .border-pendiente { border-color: #d93025 !important; }
+    .border-pagado { border-color: #2c5e50 !important; }
 </style>
 
 <div class="container-fluid py-4">
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-4">
-            <h2 class="h4 font-weight-bold text-uppercase text-dark mb-0">Gestión de Facturación</h2>
-            <p class="text-muted small">Control de ingresos y cuentas por cobrar</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h4 font-weight-bold text-dark-green mb-0">GESTIÓN DE FACTURACIÓN</h2>
+            <p class="text-muted small mb-0 text-uppercase" style="letter-spacing: 1px;">Control de ingresos y cuentas</p>
         </div>
-        <div class="col-md-8 text-right">
-            <div class="btn-group shadow-sm">
-                <a href="{{ url_for('facturacion', filtro='todo') }}" class="btn btn-white btn-sm filter-btn">Todo el tiempo</a>
-                <a href="{{ url_for('facturacion', filtro='mes') }}" class="btn btn-white btn-sm filter-btn">Mes actual</a>
-                <a href="{{ url_for('facturacion', filtro='año') }}" class="btn btn-white btn-sm filter-btn">Año actual</a>
-                <a href="{{ url_for('facturacion', filtro='pendientes') }}" class="btn btn-dark-green btn-sm filter-btn">Pendientes de Pago</a>
-            </div>
+        
+        <div class="btn-group bg-white shadow-sm p-1" style="border-radius: 8px;">
+            <a href="{{ url_for('facturacion', filtro='todo') }}" class="btn btn-sm {% if request.args.get('filtro') == 'todo' %}filter-btn-active{% else %}btn-light{% endif %}">Todo</a>
+            <a href="{{ url_for('facturacion', filtro='mes') }}" class="btn btn-sm {% if request.args.get('filtro') == 'mes' %}filter-btn-active{% else %}btn-light{% endif %}">Mes</a>
+            <a href="{{ url_for('facturacion', filtro='año') }}" class="btn btn-sm {% if request.args.get('filtro') == 'año' %}filter-btn-active{% else %}btn-light{% endif %}">Año</a>
+            <a href="{{ url_for('facturacion', filtro='pendientes') }}" class="btn btn-sm {% if request.args.get('filtro', 'pendientes') == 'pendientes' %}filter-btn-active{% else %}btn-light{% endif %}">Pendientes</a>
         </div>
     </div>
 
     <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-danger-soft">
-                <div class="card-body p-3">
-                    <small class="font-weight-bold text-uppercase">Deuda Total Pendiente</small>
-                    <h3 class="total-amount mb-0">{{ total_deuda_global | number_format }} Gs.</h3>
+        <div class="col-auto">
+            <div class="card border-0 shadow-sm border-left-danger" style="border-left: 4px solid #d93025 !important;">
+                <div class="card-body py-2">
+                    <small class="text-muted font-weight-bold">DEUDA PENDIENTE</small>
+                    <div class="h5 mb-0 font-weight-bold text-danger">{{ total_deuda_global | number_format }} Gs.</div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-success-soft">
-                <div class="card-body p-3">
-                    <small class="font-weight-bold text-uppercase">Cobrado en el Periodo</small>
-                    <h3 class="total-amount mb-0">{{ total_cobrado_periodo | number_format }} Gs.</h3>
+        <div class="col-auto">
+            <div class="card border-0 shadow-sm border-left-success" style="border-left: 4px solid #2c5e50 !important;">
+                <div class="card-body py-2">
+                    <small class="text-muted font-weight-bold">COBRADO PERIODO</small>
+                    <div class="h5 mb-0 font-weight-bold text-dark-green">{{ total_cobrado_periodo | number_format }} Gs.</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        {% for cliente_id, data in agrupados_por_cliente.items() %}
-        <div class="col-xl-4 col-md-6 mb-4">
-            <div class="card border-0 shadow-sm card-cliente h-100">
-                <div class="card-header bg-white border-0 pt-3 pb-0">
-                    <div class="d-flex justify-content-between align-items-start">
+    <div class="bg-light-container shadow-sm">
+        <div class="row">
+            {% for cliente_id, data in agrupados_por_cliente.items() %}
+            <div class="col-xl-3 col-lg-4 mb-4">
+                <div class="card card-cliente shadow-sm border-0">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center">
                         <div>
-                            <h5 class="font-weight-bold mb-0 text-dark">{{ data.cliente_nombre }}</h5>
-                            <small class="text-muted">{{ data.registros|length }} registros encontrados</small>
+                            <i class="fa-solid fa-user-tie mr-2"></i>
+                            <span class="font-weight-bold">{{ data.cliente_nombre }}</span>
                         </div>
-                        <div class="text-right">
-                            <span class="badge {% if data.deuda_total > 0 %}bg-danger-soft{% else %}bg-success-soft{% endif %}">
-                                DEUDA: {{ data.deuda_total | number_format }} Gs.
-                            </span>
+                        <span class="badge badge-pill badge-light text-dark font-weight-bold">
+                            {{ data.deuda_total | number_format }} Gs.
+                        </span>
+                    </div>
+                    
+                    <div class="card-body p-0" style="max-height: 450px; overflow-y: auto;">
+                        {% for v_id, visita in data.visitas.items() %}
+                        <div class="p-3 border-bottom visita-item {% if visita.pendiente_visita > 0 %}bg-white{% else %}bg-light{% endif %}">
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="border-left pl-2 {% if visita.pendiente_visita > 0 %}border-pendiente{% else %}border-pagado{% endif %}" style="border-width: 4px !important;">
+                                    <span class="small font-weight-bold text-dark-green text-uppercase">
+                                        <i class="fa-regular fa-calendar-check mr-1"></i> {{ visita.fecha.strftime('%d/%m/%Y') }}
+                                    </span>
+                                    <div class="small text-muted font-italic">{{ visita.servicio_principal }}</div>
+                                </div>
+
+                                {% if visita.pendiente_visita > 0 %}
+                                    <button class="btn btn-xs btn-outline-success py-1" onclick="cobrarVisita('{{ v_id }}')">
+                                        Pagar Visita
+                                    </button>
+                                {% else %}
+                                    <span class="badge badge-success-soft text-success border border-success" style="font-size: 0.65rem; padding: 2px 8px;">
+                                        <i class="fa-solid fa-check-double mr-1"></i>LIQUIDADO
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="pl-4 mt-2">
+    {% for item in visita.detalles_items %}
+    <div class="d-flex justify-content-between align-items-center mb-1 py-1 border-bottom-dotted">
+        <div class="d-flex flex-column">
+            <span class="small {% if item.estado_pago == 'PAGADO' %}text-muted{% endif %}">
+                {{ item.descripcion }}
+            </span>
+            {% if item.estado_pago == 'PAGADO' and item.date_finished %}
+            <span style="font-size: 0.65rem;" class="text-success italic">
+                Pago: {{ item.date_finished.strftime('%d/%m/%y') }} ({{ item.metodo_pago }})
+            </span>
+            {% endif %}
+        </div>
+        
+        <div class="d-flex align-items-center">
+            <span class="small mr-3 font-weight-bold">
+                {{ item.total | number_format }}
+            </span>
+            
+            {% if item.estado_pago == 'PENDIENTE' %}
+                <i class="fa-solid fa-circle-check text-muted" 
+                   style="cursor:pointer; font-size: 1.1rem;" 
+                   onclick="abrirModalPago('item', '{{ item.id }}')"></i>
+            {% else %}
+                <i class="fa-solid fa-circle-check text-success" style="font-size: 1.1rem;"></i>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+                            
+                            <div class="text-right mt-2 pr-2">
+                                <small class="text-muted mr-1">Subtotal:</small>
+                                <small class="font-weight-bold text-dark">{{ visita.total_visita | number_format }} Gs.</small>
+                            </div>
                         </div>
+                        {% endfor %}
                     </div>
-                </div>
-                
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-borderless small mb-0">
-                            <thead class="text-muted">
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Servicio/Producto</th>
-                                    <th class="text-right">Monto</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in data.registros %}
-                                <tr class="border-bottom">
-                                    <td class="py-2 text-muted">{{ item.date_created.strftime('%d/%m/%y') }}</td>
-                                    <td class="py-2">
-                                        {{ item.descripcion }}
-                                        {% if item.estado_pago == 'PAGADO' %}
-                                            <span class="status-pill badge-success">OK</span>
-                                        {% else %}
-                                            <span class="status-pill badge-warning">Pend</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="py-2 text-right font-weight-bold">{{ item.total | number_format }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    
+                    <div class="card-footer bg-white border-0 d-flex justify-content-between pt-0 pb-3">
+                        <button class="btn btn-xs text-muted" onclick="verHistorial('{{ cliente_id }}')">Ver historial completo</button>
+                        {% if data.deuda_total > 0 %}
+                        <button class="btn btn-sm btn-dark-green shadow-sm" onclick="cobrarTodo('{{ cliente_id }}')">
+                            LIQUIDAR TODO
+                        </button>
+                        {% endif %}
                     </div>
-                </div>
-                
-                <div class="card-footer bg-light border-0 d-flex justify-content-between">
-                    <button class="btn btn-sm btn-outline-dark" onclick="verHistorialCliente('{{ cliente_id }}')">
-                        Detalles
-                    </button>
-                    {% if data.deuda_total > 0 %}
-                    <button class="btn btn-sm btn-dark-green" onclick="cobrarTodo('{{ cliente_id }}')">
-                        Cobrar Saldo
-                    </button>
-                    {% endif %}
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 </div>
 
-<div class="modal fade" id="modalConfirmarPago" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-body p-4">
-                <h6 class="font-weight-bold mb-3">Registrar Cobro</h6>
+<div class="modal fade" id="modalConfirmarPago" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white py-2">
+                <h6 class="modal-title font-weight-bold">REGISTRAR COBRO</h6>
+                <button type="button" class="close text-white" data-dismiss="modal">×</button>
+            </div>
+            <div class="modal-body">
                 <div class="form-group">
-                    <label class="small font-weight-bold">Método de Pago</label>
+                    <label class="small font-weight-bold text-muted">FORMA DE PAGO</label>
                     <select id="metodo_pago" class="form-control form-control-sm">
                         <option value="TRANSFERENCIA">TRANSFERENCIA</option>
                         <option value="EFECTIVO">EFECTIVO</option>
                         <option value="CHEQUE">CHEQUE</option>
-                        <option value="TARJETA">TARJETA</option>
                     </select>
                 </div>
-                <button class="btn btn-success btn-block font-weight-bold" onclick="procesarPago()">CONFIRMAR</button>
+                <button id="btnConfirmarPago" class="btn btn-dark-green btn-block font-weight-bold">
+                    CONFIRMAR PAGO
+                </button>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-let clienteAProcesar = null;
-
-function cobrarTodo(id) {
-    clienteAProcesar = id;
-    $('#modalConfirmarPago').modal('show');
+function pagarItem(id) {
+    if(!confirm("¿Marcar solo este ítem como pagado?")) return;
+    fetch(`/api/facturacion/actualizar-pago-item/${id}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ estado: 'PAGADO', metodo: 'EFECTIVO' })
+    }).then(() => location.reload());
 }
 
-function procesarPago() {
+function cobrarVisita(vId) {
+    // Aquí puedes abrir tu modal de cobro y pasarle el vId
+    $('#modalConfirmarPago').modal('show');
+    $('#btnConfirmarPago').attr('onclick', `ejecutarCobroVisita(${vId})`);
+}
+
+function ejecutarCobroVisita(vId) {
     const metodo = $('#metodo_pago').val();
-    
-    fetch(`/api/facturacion/cobrar-cliente/${clienteAProcesar}`, {
+    fetch(`/api/facturacion/cobrar-visita/${vId}`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ metodo: metodo })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if(data.status === 'success') {
-            location.reload();
-        }
-    });
+    }).then(() => location.reload());
 }
+
+function procesarPagoVisita(vId) {
+    const metodo = $('#metodo_pago').val();
+    fetch(`/api/facturacion/cobrar-visita/${vId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ metodo: metodo })
+    }).then(() => location.reload());
+}
+
+let objetoAPagar = { tipo: null, id: null };
+
+function abrirModalPago(tipo, id) {
+    objetoAPagar.tipo = tipo;
+    objetoAPagar.id = id;
+    $('#modalConfirmarPago').modal('show');
+}
+
+// Escucha el click del botón del modal una sola vez
+document.getElementById('btnConfirmarPago').onclick = function() {
+    const metodo = document.getElementById('metodo_pago').value;
+    
+    if (objetoAPagar.tipo === 'item') {
+        ejecutarPagoItem(objetoAPagar.id, metodo);
+    } else if (objetoAPagar.tipo === 'visita') {
+        ejecutarPagoVisita(objetoAPagar.id, metodo);
+    }
+};
+
+function ejecutarPagoItem(id, metodo) {
+    fetch(`/api/facturacion/actualizar-pago-item/${id}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ metodo: metodo })
+    }).then(() => location.reload());
+}
+
+function ejecutarPagoVisita(vId, metodo) {
+    fetch(`/api/facturacion/cobrar-visita/${vId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ metodo: metodo })
+    }).then(() => location.reload());
+}
+
+// Para el botón de "Pagar Visita" en la card
+function cobrarVisita(vId) {
+    abrirModalPago('visita', vId);
+}
+
 </script>
 {% endblock %}

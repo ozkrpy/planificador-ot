@@ -256,6 +256,13 @@
                                     <div class="small text-muted d-flex align-items-center">
                                         <i class="fa-solid fa-location-dot mr-1 opacity-50"></i>{{ v.ubicacion.nombre_sucursal }}
                                     </div>
+                                    {% if v.observaciones %}
+                                    <div class="mt-1">
+                                        <small class="badge badge-light text-info border border-info" title="{{ v.observaciones }}">
+                                            <i class="fa-solid fa-comment-dots mr-1"></i> Nota: {{ v.observaciones[:30] }}{% if v.observaciones|length > 30 %}...{% endif %}
+                                        </small>
+                                    </div>
+                                    {% endif %}
                                 </td>
 
                                 <td class="py-3" style="width: 25%;">
@@ -298,7 +305,7 @@
                                             </a>
                                             <a class="dropdown-item py-2 d-flex align-items-center" href="#"
                                             onclick="cambiarEstadoConNota('{{ v.id }}', 'NO ASISTIO', true)">
-                                                <i class="fa-solid fa-circle-xmark text-warning mr-2"></i>
+                                                <i class="fa-solid fa-circle-xmark text-danger mr-2"></i>
                                                 <span class="small font-weight-bold">No asistió</span>
                                             </a>
                                             <div class="dropdown-divider"></div>
@@ -847,9 +854,14 @@ function agregarFilaFactura(desc = "", precio = 0) {
             <td><input type="number" name="precio[]" class="form-control form-control-sm border-0 val-precio" value="${precio}" onchange="recalcular()"></td>
             <td class="font-weight-bold text-right py-2 val-subtotal">0</td>
             <td>
-                <select name="pago_estado[]" class="form-control form-control-sm border-0">
+                <select name="pago_estado[]" class="form-control form-control-sm select-estado-pago" onchange="toggleMetodoPago(this)">
                     <option value="PENDIENTE">PENDIENTE</option>
                     <option value="PAGADO">PAGADO</option>
+                </select>
+                <select name="metodo_pago_item[]" class="form-control form-control-sm mt-1 select-metodo-pago" style="display: none;">
+                    <option value="EFECTIVO">EFECTIVO</option>
+                    <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                    <option value="CHEQUE">CHEQUE</option>
                 </select>
             </td>
             <td><button type="button" class="btn btn-sm text-danger" onclick="$(this).closest('tr').remove(); recalcular();">&times;</button></td>
@@ -858,5 +870,13 @@ function agregarFilaFactura(desc = "", precio = 0) {
     recalcular();
 }
 
+function toggleMetodoPago(selectElement) {
+    const metodoSelect = $(selectElement).siblings('.select-metodo-pago');
+    if (selectElement.value === 'PAGADO') {
+        metodoSelect.show().attr('required', true);
+    } else {
+        metodoSelect.hide().attr('required', false);
+    }
+}
 </script>
 {% endblock %}

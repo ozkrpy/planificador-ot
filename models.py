@@ -21,16 +21,22 @@ class Feriado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fecha = db.Column(db.Date, unique=True, nullable=False)
     descripcion = db.Column(db.String(100))
+    # Agregamos esto para tener control total desde Ajustes
+    no_laboral = db.Column(db.Boolean, default=True) 
 
     @staticmethod
     def es_laboral(fecha):
-        # 1. Verificar si es Domingo (6 en Python date.weekday())
+        # 1. Domingos nunca son laborales
         if fecha.weekday() == 6: 
             return False
-        # 2. Verificar si está en la tabla de feriados
-        feriado_existe = Feriado.query.filter_by(fecha=fecha).first()
-        if feriado_existe:
+            
+        # 2. Buscamos en la tabla
+        feriado = Feriado.query.filter_by(fecha=fecha).first()
+        
+        # Si existe el registro y está marcado como 'no_laboral', bloqueamos el día
+        if feriado and feriado.no_laboral:
             return False
+            
         return True
     
 class User(UserMixin, db.Model):
