@@ -1,89 +1,48 @@
 {% extends "base.html" %}
 
 {% block main %}
-<style>
-    /* Clonando paleta de Agendamientos */
-    body { background-color: #f8f9fa; }
-    
-    .btn-dark-green {
-        background-color: #2c5e50;
-        color: white;
-        border: 1px solid #234b40;
-    }
-    .btn-dark-green:hover {
-        background-color: #1e4137;
-        color: white;
-    }
-
-    .btn-outline-dark-green {
-        color: #2c5e50;
-        border-color: #2c5e50;
-    }
-
-    .card-cliente {
-        border: none;
-        border-radius: 8px;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-
-    .card-header-custom {
-        background-color: #2c5e50;
-        color: white;
-        border-radius: 8px 8px 0 0 !important;
-        padding: 0.75rem 1.25rem;
-    }
-
-    /* Estilos de tabla internos para que coincidan con la principal */
-    .table-factura td {
-        font-size: 0.85rem;
-        vertical-align: middle !important;
-        padding: 0.5rem;
-    }
-
-    .bg-light-container {
-        background-color: #f0f2f5;
-        border-radius: 15px;
-        padding: 20px;
-    }
-
-    .filter-btn-active {
-        background-color: #2c5e50 !important;
-        color: white !important;
-    }
-
-    .border-pendiente { border-color: #d93025 !important; }
-    .border-pagado { border-color: #2c5e50 !important; }
-</style>
-
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
         <div>
-            <h2 class="h4 font-weight-bold text-dark-green mb-0">GESTIÓN DE FACTURACIÓN</h2>
-            <p class="text-muted small mb-0 text-uppercase" style="letter-spacing: 1px;">Control de ingresos y cuentas</p>
+            <h2 class="h4 font-weight-bold text-dark-green mb-0 text-uppercase">GESTIÓN DE FACTURACIÓN</h2>
+            <p class="header-subtitle mb-0 text-uppercase">Control de ingresos y cuentas</p>
         </div>
-        
-        <div class="btn-group bg-white shadow-sm p-1" style="border-radius: 8px;">
-            <a href="{{ url_for('facturacion', filtro='todo') }}" class="btn btn-sm {% if request.args.get('filtro') == 'todo' %}filter-btn-active{% else %}btn-light{% endif %}">Todo</a>
-            <a href="{{ url_for('facturacion', filtro='mes') }}" class="btn btn-sm {% if request.args.get('filtro') == 'mes' %}filter-btn-active{% else %}btn-light{% endif %}">Mes</a>
-            <a href="{{ url_for('facturacion', filtro='año') }}" class="btn btn-sm {% if request.args.get('filtro') == 'año' %}filter-btn-active{% else %}btn-light{% endif %}">Año</a>
-            <a href="{{ url_for('facturacion', filtro='pendientes') }}" class="btn btn-sm {% if request.args.get('filtro', 'pendientes') == 'pendientes' %}filter-btn-active{% else %}btn-light{% endif %}">Pendientes</a>
+        <div class="text-muted opacity-50">
+            <i class="fa-solid fa-money-bill-1 fa-2x"></i>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-auto">
-            <div class="card border-0 shadow-sm border-left-danger" style="border-left: 4px solid #d93025 !important;">
-                <div class="card-body py-2">
-                    <small class="text-muted font-weight-bold">DEUDA PENDIENTE</small>
+    <div class="row mb-4 d-flex align-items-stretch">
+        <div class="col-auto d-flex">
+            <div class="card border-0 shadow-sm border-left-danger h-100" style="border-left: 4px solid #d93025 !important;">
+                <div class="card-body py-2 d-flex flex-column justify-content-center">
+                    <small class="text-muted font-weight-bold uppercase">DEUDA PENDIENTE</small>
                     <div class="h5 mb-0 font-weight-bold text-danger">{{ total_deuda_global | number_format }} Gs.</div>
                 </div>
             </div>
         </div>
-        <div class="col-auto">
-            <div class="card border-0 shadow-sm border-left-success" style="border-left: 4px solid #2c5e50 !important;">
-                <div class="card-body py-2">
-                    <small class="text-muted font-weight-bold">COBRADO PERIODO</small>
+        
+        <div class="col-auto d-flex">
+            <div class="card border-0 shadow-sm border-left-success h-100" style="border-left: 4px solid #2c5e50 !important;">
+                <div class="card-body py-2 d-flex flex-column justify-content-center">
+                    <small class="text-muted font-weight-bold uppercase">COBRADO PERIODO</small>
                     <div class="h5 mb-0 font-weight-bold text-dark-green">{{ total_cobrado_periodo | number_format }} Gs.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col"></div>
+
+        <div class="col-auto d-flex">
+            <div class="card border-0 shadow-sm border-left-dark h-100" style="border-left: 4px solid #838383 !important;">
+                <div class="card-body py-2 d-flex flex-column justify-content-center">
+                    <small class="text-muted font-weight-bold uppercase">FILTRAR POR</small>
+                    <div class="btn-group bg-white shadow-sm p-1" style="border-radius: 8px;">
+                        <a href="{{ url_for('facturacion', filtro='todo') }}" class="btn btn-sm {% if request.args.get('filtro') == 'todo' %}filter-btn-active{% else %}btn-light{% endif %}">Todo</a>
+                        <a href="{{ url_for('facturacion', filtro='mes') }}" class="btn btn-sm {% if request.args.get('filtro') == 'mes' %}filter-btn-active{% else %}btn-light{% endif %}">Mes</a>
+                        <a href="{{ url_for('facturacion', filtro='año') }}" class="btn btn-sm {% if request.args.get('filtro') == 'año' %}filter-btn-active{% else %}btn-light{% endif %}">Año</a>
+                        <a href="{{ url_for('facturacion', filtro='pendientes') }}" class="btn btn-sm {% if request.args.get('filtro', 'pendientes') == 'pendientes' %}filter-btn-active{% else %}btn-light{% endif %}">Pendientes</a>
+                    </div>
                 </div>
             </div>
         </div>

@@ -2,7 +2,7 @@ from flask import abort, app, flash, json, jsonify, redirect, render_template, r
 from flask_login import login_user, logout_user, current_user, login_required
 from urllib.parse import urlsplit # from werkzeug.urls import url_parse
 from sqlalchemy import func, extract
-from models import db, User, Cliente, Ubicacion, Categoria, Recurrencia, Visita, Feriado, DetalleVisita
+from models import db, User, Cliente, Ubicacion, Categoria, Recurrencia, Visita, Feriado, DetalleVisita, Personal, Vehiculo, ConfiguracionCuadrilla
 from formularios import LoginForm
 from utilitarios import calcular_total, calcular_proximo_dia, agrupar_por_semana
 from mensajes import TEXTOS
@@ -439,7 +439,13 @@ def init_routes(app):
         servicio = request.form.get('servicio').upper()
         hora_str = request.form.get('hora_sugerida')
         obs_str= request.form.get('observaciones', '').strip()
-    
+
+        # cuadrilla = request.form.get('cuadrilla')
+
+        # Buscar si existe un vehículo asignado por defecto a esa cuadrilla
+        config = ConfiguracionCuadrilla.query.filter_by(nombre_cuadrilla=str(cuadrilla_id)).first()
+        v_id = config.vehiculo_default_id if config else None
+
         try:
             # Convertimos el string de la fecha a objeto date
             fecha_obj = date.fromisoformat(fecha_str)
@@ -449,6 +455,7 @@ def init_routes(app):
                 cliente_id=cliente_id,
                 ubicacion_id=ubicacion_id,
                 cuadrilla=cuadrilla_id,
+                vehiculo_id=v_id, # Asignación automática
                 fecha=fecha_obj,
                 hora_sugerida=hora_obj,
                 servicio=servicio,
@@ -465,30 +472,22 @@ def init_routes(app):
 
         return redirect(url_for('agendamientos'))
     
-    @app.route('/api/visita/update-estado', methods=['POST'])
+   # Ruta para guardar la configuración de defaults
+    @app.route('/gestion/configurar-cuadrilla', methods=['POST'])
     @login_required
-    def update_estado_visita():
-        data = request.get_json()
-        visita_id = data.get('visita_id')
-        nuevo_estado = data.get('nuevo_estado').upper()
-        observaciones = data.get('observaciones', '').strip()
-
-        if nuevo_estado == 'NO ASISTIO' and not observaciones:
-            return jsonify({
-                'status': 'error', 
-                'message': 'Debe ingresar una observación para marcar como No Asistió.'
-            }), 400
+    def configurar_cuadrilla():
+        nombre = request.form.get('nombre_cuadrilla')
+        v_id = request.form.get('vehiculo_id')
         
-        visita = Visita.query.get_or_404(visita_id)
+        config = ConfiguracionCuadrilla.query.filter_by(nombre_cuadrilla=nombre).first()
+        if not config:
+            config = ConfiguracionCuadrilla(nombre_cuadrilla=nombre)
+            db.session.add(config)
         
-        try:
-            visita.estado = nuevo_estado
-            visita.observaciones = observaciones
-            db.session.commit()
-            return jsonify({'status': 'success', 'nuevo_estado': nuevo_estado})
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'status': 'error', 'message': str(e)}), 500
+        config.vehiculo_default_id = v_id
+        db.session.commit()
+        flash(f"Vehículo predeterminado para {nombre} actualizado.", "success")
+        return redirect(url_for('gestion_personal')) 
 
     @app.route('/visita/reagendar/<int:id>', methods=['POST'])
     @login_required
@@ -569,20 +568,36 @@ def init_routes(app):
             flash(f"Error al procesar la facturación: {str(e)}", "danger")
             
         return redirect(url_for('agendamientos'))
-
-    @app.route('/api/cliente-detalle/<int:id>')
+    
+    @app.route('/gestion/vehiculo/guardar', methods=['POST'])
     @login_required
-    def api_cliente_detalle(id):
-        """
-        Ruta auxiliar para obtener el precio base del contrato del cliente
-        al abrir el modal de facturación.
-        """
-        cliente = Cliente.query.get_or_404(id)
-        return jsonify({
-            'nombre': cliente.nombre,
-            'tipo_contrato': cliente.tipo_contrato,
-            'tarifa_estandar': getattr(cliente, 'tarifa_mensual', 0) # Ajustar según tu modelo Cliente
-        })
+    def guardar_vehiculo():
+        v_id = request.form.get('v_id')
+        denominacion = request.form.get('denominacion').upper()
+        chapa = request.form.get('chapa').upper()
+        tipo = request.form.get('tipo')
+
+        if v_id: # Editar
+            v = Vehiculo.query.get(v_id)
+            v.denominacion = denominacion
+            v.chapa = chapa
+            v.tipo = tipo
+        else: # Nuevo
+            nuevo = Vehiculo(denominacion=denominacion, chapa=chapa, tipo=tipo)
+            db.session.add(nuevo)
+        
+        db.session.commit()
+        return redirect(url_for('gestion_personal'))
+
+    @app.route('/gestion/vehiculo/eliminar/<int:id>')
+    @login_required
+    def eliminar_vehiculo(id):
+        v = Vehiculo.query.get_or_404(id)
+        # Opcional: Verificar si tiene visitas asociadas antes de borrar
+        db.session.delete(v)
+        db.session.commit()
+        return redirect(url_for('gestion_personal'))
+    
 # AJUSTES MODULE
     @app.route('/ajustes')
     @login_required
@@ -708,8 +723,35 @@ def init_routes(app):
             
 #         db.session.commit()
 #         return jsonify({"status": "success"})   
-    
-# # API ENDPOINTS
+
+# RRHH MODULE
+    @app.route('/gestion/personal')
+    @login_required
+    def gestion_personal():
+        staff = Personal.query.all()
+        vehiculos = Vehiculo.query.all()
+        return render_template('personal.html', staff=staff, vehiculos=vehiculos)
+
+    @app.route('/gestion/personal/guardar', methods=['POST'])
+    @login_required
+    def guardar_personal():
+        p_id = request.form.get('p_id')
+        nombre = request.form.get('nombre').upper()
+        rol = request.form.get('rol')
+        conductor = True if request.form.get('es_conductor') else False
+        sueldo = int(request.form.get('sueldo', 0))
+
+        if p_id:
+            p = Personal.query.get(p_id)
+            p.nombre, p.rol, p.es_conductor, p.sueldo_base = nombre, rol, conductor, sueldo
+        else:
+            nuevo = Personal(nombre=nombre, rol=rol, es_conductor=conductor, sueldo_base=sueldo)
+            db.session.add(nuevo)
+        
+        db.session.commit()
+        return redirect(url_for('gestion_personal'))
+
+# API ENDPOINTS
     @app.route('/api/ubicaciones/<int:cliente_id>')
     @login_required
     def get_ubicaciones_cliente(cliente_id):
@@ -797,3 +839,42 @@ def init_routes(app):
             
         db.session.commit()
         return jsonify({"status": "success", "count": len(detalles)})
+    
+    @app.route('/api/visita/update-estado', methods=['POST'])
+    @login_required
+    def update_estado_visita():
+        data = request.get_json()
+        visita_id = data.get('visita_id')
+        nuevo_estado = data.get('nuevo_estado').upper()
+        observaciones = data.get('observaciones', '').strip()
+
+        if nuevo_estado == 'NO ASISTIO' and not observaciones:
+            return jsonify({
+                'status': 'error', 
+                'message': 'Debe ingresar una observación para marcar como No Asistió.'
+            }), 400
+        
+        visita = Visita.query.get_or_404(visita_id)
+        
+        try:
+            visita.estado = nuevo_estado
+            visita.observaciones = observaciones
+            db.session.commit()
+            return jsonify({'status': 'success', 'nuevo_estado': nuevo_estado})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+
+    @app.route('/api/cliente-detalle/<int:id>')
+    @login_required
+    def api_cliente_detalle(id):
+        """
+        Ruta auxiliar para obtener el precio base del contrato del cliente
+        al abrir el modal de facturación.
+        """
+        cliente = Cliente.query.get_or_404(id)
+        return jsonify({
+            'nombre': cliente.nombre,
+            'tipo_contrato': cliente.tipo_contrato,
+            'tarifa_estandar': getattr(cliente, 'tarifa_mensual', 0) # Ajustar según tu modelo Cliente
+        })

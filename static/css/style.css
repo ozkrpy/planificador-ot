@@ -1,155 +1,215 @@
-/* Custom Serious Dark Theme */
+/* ==========================================================================
+   VARIABLES DE DISEÑO (Enterprise Tone)
+   ========================================================================== */
 :root {
-    --nav-bg: #4a5568;       /* Lighter than pure black, but still professional */
-    --nav-border: #454d55;   /* Subtle bottom border for depth */
-    --dark-bg: #1a1d20;
+    /* Paleta Principal */
+    --primary-dark: #2c5e50;    /* Verde Bosque Profesional */
+    --primary-hover: #1e4137;
+    --nav-bg: #34495e;          /* Azul Grisáceo (Deep Slate) */
+    --nav-border: #2c3e50;
+    
+    /* Fondo y Superficies */
+    --body-bg: #f0f2f5;         /* Gris muy suave */
     --card-bg: #ffffff;
-    --text-main: #212324;
+    --border-color: #e0e4e8;
+    
+    /* Tipografía */
+    --text-main: #2d3436;       /* Gris casi negro */
+    --text-muted: #636e72;      /* Gris para subtítulos */
 }
 
+/* ==========================================================================
+   ESTILOS GLOBALES
+   ========================================================================== */
+body {
+    background-color: var(--body-bg);
+    color: var(--text-main);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+}
+
+/* Scrollbar Profesional */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #999; }
+
+/* ==========================================================================
+   NAVEGACIÓN (Sober & Sharp)
+   ========================================================================== */
 .navbar.bg-dark {
     background-color: var(--nav-bg) !important;
     border-bottom: 2px solid var(--nav-border);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Adds a clean lift from the background */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 0.5rem 1rem;
 }
 
-/* Softer hover effect for the menu items */
 .navbar-dark .navbar-nav .nav-link {
-    color: rgba(255,255,255,.75);
-    transition: color 0.3s ease;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    padding: 0.5rem 1rem;
 }
 
 .navbar-dark .navbar-nav .nav-link:hover {
     color: #ffffff;
-    background-color: rgba(255,255,255,0.05); /* Very subtle highlight on hover */
+    background-color: rgba(255,255,255,0.1);
     border-radius: 4px;
 }
 
-body {
-    background-color: #f0f2f5; /* Subtle light gray background */
-    color: var(--text-main);
+/* ==========================================================================
+   COMPONENTES: BOTONES (Consistent Styling)
+   ========================================================================== */
+.btn-dark-green {
+    background-color: var(--primary-dark);
+    color: white !important;
+    border: 1px solid var(--primary-hover);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.75rem;
+    padding: 0.4rem 1.2rem;
+    transition: all 0.3s ease;
 }
 
-/* Override Bootstrap Primary with a Slate/Charcoal tone */
-.bg-primary {
-    background-color: #2c3e50 !important; 
+.btn-dark-green:hover {
+    background-color: var(--primary-hover);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-.btn-primary {
-    background-color: #2c3e50 !important;
-    border-color: #1a252f !important;
-}
-
-/* Refined Cards */
-.card {
-    border: none;
-    border-radius: 4px;
-    border-top: 3px solid #1f0278; /* Serious accent line at top */
-}
-
-.card-header {
-    background-color: transparent !important;
-    color: #2c3e50 !important;
-    font-weight: bold;
-    border-bottom: 1px solid var(--border-color);
-}
-
-/* Custom shadow for a "clean" floating look */
-.shadow-sm {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
-}
-
-/* Specific styling for your Status card */
-.border-left-primary {
-    border-left: .25rem solid #2c3e50 !important;
-    border-top: none !important;
-}
-
-.table thead th {
-    border-top: none;
+.btn-outline-dark-green {
+    color: var(--primary-dark);
+    border: 1px solid var(--primary-dark);
+    font-weight: 600;
     font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--accent-gray);
 }
 
-.btn-outline-danger {
-    border-color: #e3342f;
-    color: #e3342f;
-}
-
-.btn-outline-danger:hover {
-    background-color: #e3342f;
+.btn-outline-dark-green:hover {
+    background-color: var(--primary-dark);
     color: white;
 }
 
-/* Extra small labels for a professional form look */
-.x-small {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+/* ==========================================================================
+   COMPONENTES: CARDS Y CONTENEDORES
+   ========================================================================== */
+.card {
+    border: 1px solid var(--border-color);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
 }
 
-/* Softer borders for inputs */
-.form-control-sm {
-    border-radius: 2px;
-    border: 1px solid #d1d5db;
+.card-header-custom {
+    background-color: var(--primary-dark);
+    color: white;
+    padding: 0.75rem 1.25rem;
+    border-radius: 6px 6px 0 0 !important;
 }
 
-.form-control-sm:focus {
-    border-color: #2c3e50;
-    box-shadow: none;
+.bg-light-container {
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
 }
 
-/* Helper for vertical division on large screens */
-@media (min-width: 992px) {
-    .border-right {
-        border-right: 1px solid #edf2f7 !important;
-    }
-}
-
-/* Button size tweak */
-.btn-xs {
-    padding: 1px 8px;
-    font-size: 0.75rem;
-}
-
-.nav-link i {
-    display: block;
-    width: 100%;
-    height: 20px; /* Altura fija para el icono */
-    line-height: 20px;
-}
-
-/* Ajuste para los nombres de las secciones entre corchetes */
-.x-small {
-    font-size: 0.75rem;
-    display: block;
-    white-space: nowrap;
-}
-
-/* El botón de Salir (derecha) */
-.logout-btn {
+.card-header {
+    height: 55px; /* Altura fija para alineación perfecta */
     display: flex;
-    flex-direction: column;
     align-items: center;
-    font-size: 0.7rem;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
 }
 
-.fa-fw {
-    text-align: center;
-    width: 1.25em;
-}
-
-/* Evitar que los botones de acción se deformen por el line-height */
-.btn-sm i {
-    font-size: 0.9rem;
+/* Asegura que el título no tenga márgenes que empujen la caja */
+.card-header h5 {
     line-height: 1;
+    margin: 0;
 }
 
-/* Ajuste para el botón de ubicación de la imagen */
-.btn-xs {
-    font-size: 0.65rem;
-    line-height: 1.5;
-    border-radius: 4px;
+/* ==========================================================================
+   TABLAS (Data-Heavy Design)
+   ========================================================================== */
+.table {
+    color: var(--text-main);
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid var(--border-color);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.table td {
+    vertical-align: middle !important;
+    border-top: 1px solid #f0f2f5;
+    padding: 0.75rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(44, 94, 80, 0.03); /* Sutil tinte verde al pasar el mouse */
+}
+
+/* ==========================================================================
+   UTILIDADES DE TEXTO E ICONOS
+   ========================================================================== */
+.text-dark-green { color: var(--primary-dark) !important; }
+
+.header-subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.border-top-success {
+    border-top: 3px solid var(--primary-dark) !important;
+}
+
+/* Badges profesionales */
+.badge {
+    font-weight: 600;
+    padding: 0.35em 0.65em;
+}
+
+.badge-information {
+    padding: 0.0em 0.0em !important; /* Reducimos el aire interno */
+    font-size: 0.6rem !important;      /* Texto ligeramente más pequeño */
+    font-weight: 700;
+    text-transform: uppercase;         /* Da un tono más oficial */
+    line-height: 1;                    /* Forzamos que no herede el alto de línea del body */
+    vertical-align: middle;
+    border-radius: 4px;                /* Menos redondeado se ve más serio */
+}
+
+
+/* ==========================================================================
+   ESTADOS DE FACTURACIÓN Y FILTROS
+   ========================================================================== */
+.filter-btn-active {
+    background-color: var(--primary-dark) !important;
+    color: white !important;
+    border-color: var(--primary-hover) !important;
+}
+
+.table-factura td {
+    font-size: 0.85rem;
+    padding: 0.6rem;
+}
+
+
+/* ==========================================================================
+   DEFINICIONES DE CLASES PERSONALIZADAS 
+   ========================================================================== */
+.background-primario {
+    background-color: var(--primary-dark);
+    color: white; /* Optional: Ensure text is readable on dark background */
+    padding: 10px; /* Optional: Add some spacing */
 }

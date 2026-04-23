@@ -1,63 +1,18 @@
 {% extends "base.html" %}
 
 {% block main %}
-<style>
-    /* Consistencia con la tabla de agendamientos */
-    .table td {
-        vertical-align: middle !important;
-        border-top: 1px solid #f0f2f5;
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
-    }
-
-    /* Estilo de los badges de día y cuadrilla */
-    .badge-day {
-        background-color: #f8f9fa;
-        color: #34495e;
-        border: 1px solid #d1d8e0;
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        font-weight: 700;
-        padding: 0.4em 0.8em;
-    }
-
-    .badge-cuadrilla {
-        background-color: #e3f2fd;
-        color: #0d47a1;
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        padding: 0.4em 0.8em;
-    }
-
-    /* Encabezados de tabla minimalistas */
-    .thead-light th {
-        background-color: #f8f9fa !important;
-        text-transform: uppercase;
-        font-size: 0.65rem;
-        letter-spacing: 1px;
-        color: #6c757d;
-        border-bottom: 2px solid #dee2e6 !important;
-    }
-
-    .text-service-tag {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #495057;
-        background: #f1f3f5;
-        padding: 2px 8px;
-        border-radius: 4px;
-    }
-</style>
-
 <div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm border">
-        <h2 class="h4 mb-0 text-dark">
-            <i class="fa-solid fa-clock-rotate-left text-secondary mr-2"></i>Reglas de Programación
-        </h2>
-        <a href="{{ url_for('agendamientos') }}" class="btn btn-outline-secondary btn-sm px-3">
-            <i class="fa-solid fa-arrow-left mr-1"></i> Volver al Panel
-        </a>
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <div>
+                <h2 class="h4 font-weight-bold text-dark-green mb-0 text-uppercase">Reglas de Programación</h2>
+                <p class="header-subtitle mb-0 text-uppercase">Configuración de las reglas para la programación de visitas.</p>
+            </div>
+            <!--  -->
+        </div>
+        <div class="text-muted opacity-50">
+            <i class="fa-solid fa-calendar-check fa-2x"></i>
+        </div>
     </div>
 
     <div class="card shadow-sm border-0">
@@ -131,6 +86,11 @@
                 </tbody>
             </table>
         </div>
+    </div>
+    <div>
+        <a href="{{ url_for('agendamientos') }}" class="btn btn-outline-secondary btn-sm px-3">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Volver al Panel
+        </a>
     </div>
 </div>
 {% endblock %}

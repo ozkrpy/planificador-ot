@@ -124,7 +124,8 @@ class Visita(db.Model):
     servicio = db.Column(db.String(100))
     hora_sugerida = db.Column(db.Time, nullable=True)
     observaciones = db.Column(db.Text, nullable=True)
-
+    vehiculo_id = db.Column(db.Integer, db.ForeignKey('vehiculo.id'))
+    
     # Link opcional a la recurrencia que la generó
     recurrencia_id = db.Column(db.Integer, db.ForeignKey('recurrencias.id'), nullable=True)
     
@@ -136,6 +137,7 @@ class Visita(db.Model):
     ubicacion = db.relationship('Ubicacion', backref='visitas_en_sitio')
     recurrencia = db.relationship('Recurrencia', backref='instancias_visita')
     detalles = db.relationship('DetalleVisita', backref='visita', lazy=True)
+    vehiculo = db.relationship('Vehiculo', backref='visitas')
 
 class DetalleVisita(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -157,3 +159,25 @@ class DetalleVisita(db.Model):
     estado_pago = db.Column(db.String(20), default='PENDIENTE') # PENDIENTE, PAGADO
     metodo_pago = db.Column(db.String(50), nullable=True) # Transferencia, Efectivo, etc.
     observaciones = db.Column(db.Text, nullable=True)
+
+class Personal(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    rol = db.Column(db.String(50))  # JARDINERO, PISCINERO, AMBOS
+    es_conductor = db.Column(db.Boolean, default=False)
+    telefono = db.Column(db.String(20))
+    sueldo_base = db.Column(db.Integer, default=0) # Placeholder para Payroll
+    activo = db.Column(db.Boolean, default=True)
+
+class Vehiculo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    denominacion = db.Column(db.String(100)) # Ej: Toyota Hilux 01
+    chapa = db.Column(db.String(20), unique=True)
+    tipo = db.Column(db.String(50)) # CAMIONETA, MOTOCARRO, AUTO
+
+class ConfiguracionCuadrilla(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre_cuadrilla = db.Column(db.String(50), unique=True) # CUADRILLA 1, CUADRILLA 2
+    vehiculo_default_id = db.Column(db.Integer, db.ForeignKey('vehiculo.id'))
+    
+    vehiculo_default = db.relationship('Vehiculo')    
