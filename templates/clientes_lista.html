@@ -20,7 +20,7 @@
     <td class="align-middle">
         <div class="mt-1">
             {# 1. Pre-calculamos el color del texto en una variable #}
-            {% set text_color = '#ffffff' if badge_class != 'badge-light' else '#212529' %} 
+            <!-- {% set text_color = '#ffffff' if badge_class != 'badge-light' else '#212529' %}  -->
             
             {# Usamos la sintaxis de filtros propia de Jinja2 #}
             {% set tipo = (c.tipo_contrato | trim | lower) if c.tipo_contrato else '' %}
@@ -28,20 +28,23 @@
             {% if tipo == (txt.CONTRATO_PISCINA | trim | lower) %}
                 {% set badge_class = 'badge-primary' %}
                 {% set border_color = '#007bff' %}
+                {% set text_color = '#000675' %}
             {% elif tipo == (txt.CONTRATO_JARDIN | trim | lower) %}
                 {% set badge_class = 'badge-success' %}
                 {% set border_color = '#28a745' %}
+                {% set text_color = '#00520b' %}
             {% elif tipo == (txt.CONTRATO_AMBOS | trim | lower) %}
                 {% set badge_class = 'badge-info' %}
                 {% set border_color = '#17a2b8' %}
+                {% set text_color = '#17a2b8' %}
             {% elif tipo == (txt.CONTRATO_PROVEEDOR | trim | lower) %}
                 {% set badge_class = 'badge-secondary' %}
                 {% set border_color = '#3e005d' %}
-                {% set text_color = '#e8eaec' %}
+                {% set text_color = '#454545' %}
             {% else %}
                 {% set badge_class = 'badge-light' %}
                 {% set border_color = '#2a2a2b' %}
-                {% set text_color = '#777b7f' %}
+                {% set text_color = '#000000' %}
             {% endif %}
     
             <span class="badge {{ badge_class }} d-inline-block border x-small font-weight-bold" 

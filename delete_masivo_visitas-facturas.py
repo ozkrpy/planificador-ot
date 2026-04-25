@@ -1,11 +1,14 @@
 from app import db, app
-from models import Recurrencia, Visita, ConfiguracionCuadrilla, Personal, Vehiculo
+from models import DetalleVisita, Recurrencia, Visita, ConfiguracionCuadrilla, Personal, Vehiculo
 
 def clean_transactional_data():
     with app.app_context():
         print("Iniciando limpieza de datos...")
         
         try:
+            db.session.query(DetalleVisita).delete()
+            print("- Historial de visitas limpio.")
+
             db.session.query(Visita).delete()
             print("- Historial de visitas limpio.")
 

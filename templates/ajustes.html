@@ -93,51 +93,52 @@
                     </button>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive table-fixed-height">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="thead-light small bg-light x-small font-weight-bold text-muted text-uppercase">
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Descripción / Regla</th>
-                                    <th class="text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody class="small">
-                                {% for f in feriados %}
-                                <tr>
-                                    <td class="align-middle py-3 px-3" style="width: 20%;">
-                                        <div class="d-flex flex-column">
-                                            <span class="text-dark font-weight-bold">{{ f.fecha.strftime('%d/%m/%Y') }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="align-middle py-3">
-                                        <span style="font-size: 0.9rem;">{{ f.descripcion }}</span>
-                                        <div class="custom-control custom-switch mt-1">
-                                            <input type="checkbox" class="custom-control-input" id="f_no_laboral_{{ f.id }}" name="no_laboral" checked>
-                                            <label class="custom-control-label text-muted" style="font-size: 0.65rem; font-weight: 600; text-transform: uppercase;" for="f_no_laboral_{{ f.id }}">Bloquear Agenda</label>
-                                        </div>
-                                    </td>
-                                    <td class="text-right align-middle py-3 px-3" style="width: 25%;">
-                                        <button class="btn btn-sm btn-outline-info py-1 mr-1" 
-                                                onclick="editarFeriado('{{ f.id }}', '{{ f.fecha }}', '{{ f.descripcion }}')">
-                                            <i class="fa-solid fa-pen"></i>
-                                        </button>
-                                        <a href="{{ url_for('eliminar_feriado', id=f.id) }}" 
-                                        class="btn btn-sm btn-outline-danger py-1" 
-                                        onclick="return confirm('¿Eliminar feriado?')">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="3" class="text-center text-muted p-4">No hay feriados registrados</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+    <div style="max-height: 420px; overflow-y: auto; overflow-x: auto;">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="thead-light x-small font-weight-bold text-muted text-uppercase">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Descripción / Regla</th>
+                    <th class="text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="small">
+                {% for f in feriados %}
+                <tr>
+                    <td class="align-middle py-2 px-3" style="width: 20%;">
+                        <span class="font-weight-bold">{{ f.fecha.strftime('%d/%m/%Y') }}</span>
+                    </td>
+                    <td class="align-middle py-2">
+                        <span style="font-size: 0.85rem;">{{ f.descripcion }}</span>
+                        <div class="custom-control custom-switch mt-1">
+                            <input type="checkbox" class="custom-control-input" 
+                                   id="f_no_laboral_{{ f.id }}" name="no_laboral" checked>
+                            <label class="custom-control-label text-muted" 
+                                   style="font-size: 0.65rem; font-weight: 600; text-transform: uppercase;" 
+                                   for="f_no_laboral_{{ f.id }}">Bloquear Agenda</label>
+                        </div>
+                    </td>
+                    <td class="text-right align-middle py-2 px-3" style="width: 15%;">
+                        <button class="btn btn-sm btn-outline-info py-1 mr-1" 
+                                onclick="editarFeriado('{{ f.id }}', '{{ f.fecha }}', '{{ f.descripcion | e }}')">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <a href="{{ url_for('eliminar_feriado', id=f.id) }}" 
+                           class="btn btn-sm btn-outline-danger py-1" 
+                           onclick="return confirm('Eliminar feriado?')">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted p-4">No hay feriados registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
             </div>
         </div>
 

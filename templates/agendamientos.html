@@ -22,75 +22,91 @@
             </a>
             
             <button class="btn btn-dark-green btn-sm px-3" data-toggle="modal" data-target="#modalNuevaRecurrencia">
-                <i class="fa-solid fa-plus-circle mr-1"></i> Nueva Recurrencia
+                <i class="fa-solid fa-plus-circle mr-1"></i> Programar visitas periodicas   
             </button>
         </div>
     </div>
     <div class="container-fluid mt-4">
         <div class="row">
-            {% for cuadrilla_num in [1, 2] %}
-            <div class="col-md-6">
-                <div class="background-primario text-white p-2 rounded-top d-flex justify-content-between align-items-center shadow-sm">
-                    <h5 class="mb-0 font-weight-bold small text-uppercase">AGENDA DE CUADRILLA {{ cuadrilla_num }}</h5>
-                    
-                    {% set lista_actual = semanas_c1 if cuadrilla_num == 1 else semanas_c2 %}
-                    {% if lista_actual and lista_actual[0][1] and lista_actual[0][1][0].vehiculo %}
-                        <span class="badge badge-light text-dark x-small">
-                            <i class="fa-solid fa-truck mr-1"></i> {{ lista_actual[0][1][0].vehiculo.denominacion }}
-                        </span>
-                    {% endif %}
-                </div>
-                {% for label, visitas in lista_actual %}
-                <div class="week-section mb-4">
-                    <div class="bg-light py-1 px-3 border-left border-right border-bottom text-muted font-weight-bold small text-uppercase" style="letter-spacing: 1px;">
-                        {{ label }}
+    {% for c in cuadrillas %}
+    <div class="col-xl-6 col-lg-12 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3 border-bottom-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1 font-weight-bold text-dark text-uppercase" 
+                            style="letter-spacing: 0.5px;">
+                            {{ c.nombre_cuadrilla }}
+                        </h6>
+                        <div class="x-small text-muted">
+                            <i class="fa-solid fa-truck-pickup mr-1"></i>
+                            {% if c.vehiculo_default %}
+                                {{ c.vehiculo_default.denominacion }} 
+                                <span class="badge badge-secondary-soft">{{ c.vehiculo_default.chapa }}</span>
+                            {% else %}
+                                <span class="font-italic">Sin vehículo asignado</span>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="card shadow-sm border-0 rounded-0">
-                        <div class="card-body p-0">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="thead-light small">
-                                    <tr>
-                                        <th style="width: 15%">FECHA</th> 
-                                        <th style="width: 45%">CLIENTE</th>
-                                        <th style="width: 25%">SERVICIO</th>
-                                        <th style="width: 15%" class="text-right">ESTADO</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for v in visitas %}
-                                    <tr class="align-middle {% if v.fecha == hoy %}table-today{% endif %}">
-                                        <td class="text-center py-2">
-                                            <div class="d-flex flex-column align-items-center">
-                                                <small class="text-uppercase font-weight-bold text-muted mb-0" style="font-size: 0.6rem;">{{ v.fecha.strftime('%a') }}</small>
-                                                <span class="font-weight-bold text-dark">{{ v.fecha.strftime('%d/%m') }}</span>
-                                            </div>
-                                        </td>
-                                        <td class="text-left py-2">
-                                            <div class="text-dark font-weight-bold small text-uppercase">{{ v.cliente.nombre }}
-                                            </div><div class="x-small text-muted">
-                                                <i class="fa-solid fa-location-dot mr-1"></i>{{ v.ubicacion.nombre_sucursal }}</div>
-                                            {% if v.observaciones %} 
-                                            <div class="py-0">
-                                                <small class="badge-information text-dark" title="{{ v.observaciones }}">
-                                                    <i class="fa-solid fa-comment-dots"></i> Nota: {{ v.observaciones[:30] }}{% if v.observaciones|length > 30 %}...{% endif %}
+                    <span class="badge badge-pill badge-dark">
+                        {{ c.integrantes|length }} Integrantes
+                    </span>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="thead-light x-small">
+                            <tr>
+                                <th style="width: 20%" class="pl-3">FECHA</th>
+                                <th style="width: 40%">CLIENTE</th>
+                                <th style="width: 20%">TIPO VISITA</th>
+                                <th style="width: 20%" class="text-right pr-3">ESTADO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {# Usamos un namespace para rastrear si encontramos visitas para esta cuadrilla #}
+                            {% set encontrado = namespace(hay_visitas=false) %}
+
+                            {% for v in visitas %}
+                                {# Comparamos el ID de la visita con el ID de la cuadrilla actual #}
+                                {# Forzamos string en ambos lados para asegurar la coincidencia #}
+                                {% if v.cuadrilla_id|string == c.id|string or v.cuadrilla|string == c.id|string %}
+                                    {% set encontrado.hay_visitas = true %}
+                                    <tr class="align-middle">
+                                        <td class="pl-3 py-2">
+                                            <div class="d-flex flex-column">
+                                                <span class="font-weight-bold text-dark" style="font-size: 0.75rem;">
+                                                    {{ v.fecha.strftime('%d/%m') }}
+                                                </span>
+                                                <small class="text-muted text-uppercase" style="font-size: 0.6rem;">
+                                                    {{ v.fecha.strftime('%a') }}
                                                 </small>
                                             </div>
-                                            {% endif %}
                                         </td>
-                                        <td class="py-2">
-                                            <select class="form-control form-control-sm custom-select-serious select-servicio" data-visita-id="{{ v.id }}">
-                                                <option value="PISCINA Y JARDÍN" {% if v.servicio == 'PISCINA Y JARDÍN' %}selected{% endif %}>PISCINA Y JARDÍN</option>
-                                                <option value="SOLO PISCINA" {% if v.servicio == 'SOLO PISCINA' %}selected{% endif %}>SOLO PISCINA</option>
-                                                <option value="SOLO JARDÍN" {% if v.servicio == 'SOLO JARDÍN' %}selected{% endif %}>SOLO JARDÍN</option>
-                                            </select>
+                                        <td>
+                                            <div class="text-dark font-weight-bold x-small text-uppercase text-truncate" 
+                                                style="max-width: 180px;" title="{{ v.cliente.nombre }}">
+                                                {{ v.cliente.nombre }}
+                                            </div>
+                                            <div class="x-small text-muted text-truncate" style="max-width: 180px;">
+                                                {{ v.ubicacion.nombre_sucursal if v.ubicacion else 'Sin ubicación' }}
+                                            </div>
                                         </td>
-                                        <td class="text-right py-2">
+                                        <td>
+                                            <div class="text-dark font-weight-bold x-small text-uppercase text-truncate" 
+                                                style="max-width: 180px;" title="{{ v.cliente.nombre }}">
+                                                {{ v.servicio }}
+                                            </div>
+                                        </td>
+                                        <td class="text-right pr-3">
                                             <div class="dropdown">
-                                                <button class="btn btn-sm btn-block dropdown-toggle font-weight-bold status-btn 
-                                                        {% if v.estado == 'PENDIENTE' %}btn-warning-soft
-                                                        {% elif v.estado == 'COMPLETADO' %}btn-success-soft
-                                                        {% else %}btn-secondary-soft{% endif %}" 
-                                                        type="button" id="statusBtn{{ v.id }}" data-toggle="dropdown">
+                                                <button class="btn btn-xs font-weight-bold px-2
+                                                    {% if v.estado == 'PENDIENTE' %}btn-warning-soft
+                                                    {% elif v.estado == 'COMPLETADO' %}btn-success-soft
+                                                    {% else %}btn-secondary-soft{% endif %}"
+                                                    data-toggle="dropdown" data-boundary="window" style="font-size: 0.65rem;">
                                                     {{ v.estado }}
                                                 </button>
                                                 <div class="dropdown-menu dropdown-menu-right shadow border-0">
@@ -102,47 +118,64 @@
                                                         <i class="fa-solid fa-check-circle text-success mr-2"></i>
                                                         <span class="small font-weight-bold">Marcar completado</span>
                                                     </a>
+                                                    
                                                     <a class="dropdown-item btn-reagendar" 
-                                                    href="#"
-                                                    data-id="{{ v.id }}"
-                                                    data-cliente="{{ v.cliente.nombre }}"
-                                                    data-fecha="{{ v.fecha }}"
-                                                    data-cuadrilla="{{ v.cuadrilla }}"
-                                                    data-servicio="{{ v.servicio }}"
-                                                    data-hora="{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}">
+                                                        href="#"
+                                                        data-id="{{ v.id }}"
+                                                        data-cliente="{{ v.cliente.nombre }}"
+                                                        data-fecha="{{ v.fecha }}"
+                                                        data-cuadrilla="{{ v.cuadrilla }}"
+                                                        data-servicio="{{ v.servicio }}"
+                                                        data-hora="{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}">
                                                         <i class="fa-solid fa-calendar-day text-info mr-2"></i>
                                                         <span class="small font-weight-bold">Reagendar</span>
                                                     </a>
                                                     <a class="dropdown-item py-2 d-flex align-items-center" href="#"
-                                                    onclick="cambiarEstadoConNota('{{ v.id }}', 'NO ASISTIO', true)">
+                                                        onclick="cambiarEstadoConNota('{{ v.id }}', 'NO ASISTIO', true)">
                                                         <i class="fa-solid fa-circle-xmark text-danger mr-2"></i>
                                                         <span class="small font-weight-bold">No asistió</span>
                                                     </a>
                                                     <div class="dropdown-divider"></div>
-
                                                     <form action="{{ url_for('eliminar_visita', id=v.id) }}" method="POST" 
-                                                        onsubmit="return confirm('¿Está seguro de eliminar esta visita del registro?');">
-                                                        <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
-                                                            <i class="fa-solid fa-trash-can mr-2 opacity-75"></i>
-                                                            <span class="small font-weight-bold">Eliminar registro</span>
-                                                        </button>
+                                                    onsubmit="return confirm('¿Está seguro de eliminar esta visita del registro?');">
+                                                    <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
+                                                        <i class="fa-solid fa-trash-can mr-2 opacity-75"></i>
+                                                        <span class="small font-weight-bold">Eliminar registro</span>
+                                                    </button>
                                                     </form>
                                                 </div>
                                             </div>
                                         </td>
-                                        {% else %}
-                                            <tr><div class="text-center text-muted p-4 small">No hay visitas programadas</div></tr>
-                                        {% endfor %}
                                     </tr>
-                                </tbody>
-                            </table>                                    
-                        </div> <!-- card body -->
-                    </div> <!-- cierre de card body --> 
-                </div> <!-- cierre de week -->
-                {% endfor %}
-            </div> <!-- cierre de col-md6 -->
-            {% endfor %} <!-- cierre de cuadrillas -->
-        </div> <!-- cierre de row -->
+                                {% endif %}
+                            {% endfor %}
+
+                            {# Si después de recorrer todas las visitas no encontramos ninguna para esta cuadrilla #}
+                            {% if not encontrado.hay_visitas %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-muted small italic">
+                                        <i class="fa-solid fa-calendar-minus d-block mb-1 opacity-50"></i>
+                                        No hay servicios programados para {{ c.nombre_cuadrilla }}
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card-footer bg-light border-0 py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted x-small">Última actualización: Hoy</small>
+                    <a href="#" class="btn btn-link btn-sm p-0 x-small font-weight-bold text-dark">
+                        Ver hoja de ruta <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
     </div> <!-- cierre de container -->
 </div> <!-- cierre de container-fluid -->
 
@@ -150,7 +183,7 @@
     <div class="modal-dialog modal-dialog-centered" role="document">
         <form action="{{ url_for('crear_recurrencia') }}" method="POST" class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-light border-bottom-0">
-                <h5 class="modal-title text-secondary"><i class="fa-solid fa-calendar-plus mr-2"></i>Nueva Recurrencia</h5>
+                <h5 class="modal-title text-secondary"><i class="fa-solid fa-calendar-plus mr-2"></i>Programar visitas</h5>
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
@@ -173,9 +206,23 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Cuadrilla</label>
-                            <select name="cuadrilla_id" class="form-control">
+                            <!-- <select name="cuadrilla_id" class="form-control">
                                 <option value="1">Cuadrilla 1</option>
                                 <option value="2">Cuadrilla 2</option>
+                            </select> -->
+                            <select name="cuadrilla_id" 
+                                    id="agendar_cuadrilla" 
+                                    class="form-control form-control-sm shadow-none" 
+                                    required>
+                                <option value="" disabled>Seleccione un equipo...</option>
+                                
+                                {% for c in cuadrillas %}
+                                    <option value="{{ c.id }}">
+                                        {{ c.nombre_cuadrilla | upper }}
+                                    </option>
+                                {% else %}
+                                    <option disabled>No hay equipos configurados</option>
+                                {% endfor %}
                             </select>
                         </div>
                     </div>
@@ -194,7 +241,7 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Día de Visita</label>
-                            <select name="dia_semana" class="form-control">
+                            <select name="dia_semana"id="select_dia_principal" class="form-control" onchange="toggleFrecuencia()">
                                 <option value="0">Lunes</option> <option value="1">Martes</option>
                                 <option value="2">Miércoles</option> <option value="3">Jueves</option>
                                 <option value="4">Viernes</option> <option value="5">Sábado</option>
@@ -228,7 +275,7 @@
                         <div id="div_segundo_dia" style="display:none; margin-top: 15px;">
                             <div class="form-group mb-0 p-2 border rounded bg-light">
                                 <label class="small font-weight-bold text-uppercase text-primary mb-1">
-                                    <i class="fa-solid fa-calendar-plus mr-1"></i> Segundo Día (Regla +2 días)
+                                    <i class="fa-solid fa-calendar-plus mr-1"></i> Sgte. Visita (Regla +2 días)
                                 </label>
                                 <select name="segundo_dia" id="select_segundo_dia" class="form-control form-control-sm border-primary font-weight-bold">
                                     </select>
@@ -273,7 +320,12 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Fecha</label>
-                            <input type="date" name="fecha" class="form-control" required value="{{ hoy }}">
+                            <input type="date" 
+                                name="fecha" 
+                                class="form-control" 
+                                required 
+                                value="{{ hoy }}" 
+                                onchange="validarFechaNoLaboral(this)">
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -292,9 +344,23 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Cuadrilla</label>
-                            <select name="cuadrilla_id" class="form-control">
+                            <!-- <select name="cuadrilla_id" class="form-control">
                                 <option value="1">Cuadrilla 1</option>
                                 <option value="2">Cuadrilla 2</option>
+                            </select> -->
+                            <select name="cuadrilla_id" 
+                                    id="esporadica_cuadrilla" 
+                                    class="form-control form-control-sm shadow-none" 
+                                    required>
+                                <option value="" disabled>Seleccione un equipo...</option>
+                                
+                                {% for c in cuadrillas %}
+                                    <option value="{{ c.id }}">
+                                        {{ c.nombre_cuadrilla | upper }}
+                                    </option>
+                                {% else %}
+                                    <option disabled>No hay equipos configurados</option>
+                                {% endfor %}
                             </select>
                         </div>
                     </div>
@@ -340,7 +406,12 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Nueva Fecha</label>
-                            <input type="date" name="fecha" id="reagendar_fecha" class="form-control" required>
+                            <input type="date" 
+                                name="fecha" 
+                                id="reagendar_fecha" 
+                                class="form-control" 
+                                required 
+                                onchange="validarFechaNoLaboral(this)">
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -360,9 +431,23 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Cuadrilla</label>
-                            <select name="cuadrilla_id" id="reagendar_cuadrilla" class="form-control">
+                            <!-- <select name="cuadrilla_id" id="reagendar_cuadrilla" class="form-control">
                                 <option value="1">Cuadrilla 1</option>
                                 <option value="2">Cuadrilla 2</option>
+                            </select> -->
+                            <select name="cuadrilla_id" 
+                                    id="reagendar_cuadrilla" 
+                                    class="form-control form-control-sm shadow-none" 
+                                    required>
+                                <option value="" disabled>Seleccione un equipo...</option>
+                                
+                                {% for c in cuadrillas %}
+                                    <option value="{{ c.id }}">
+                                        {{ c.nombre_cuadrilla | upper }}
+                                    </option>
+                                {% else %}
+                                    <option disabled>No hay equipos configurados</option>
+                                {% endfor %}
                             </select>
                         </div>
                     </div>
@@ -443,46 +528,75 @@
 
 {% block scripts %}
 <script>
-    
-    /**
-    * Calcula el segundo día saltando domingos y feriados
-    * @param {string} fechaBaseStr - Fecha en formato YYYY-MM-DD
-    */
-function calcularSegundoDia(fechaBaseStr) {
-    // Usar comillas temporales ayuda al linter del editor, 
-    // pero Jinja2 las reemplazará correctamente.
-    const feriadosLista = JSON.parse('{{ feriados_json | safe }}' || '[]');
-    // const feriadosLista = {{ feriados_json | safe }};
-    if (!fechaBaseStr) return;
 
-    let fecha = new Date(fechaBaseStr + 'T00:00:00');
+function validarFechaNoLaboral(input) {
+    const feriadosLista = JSON.parse('{{ feriados_json | safe }}' || '[]');
+    const fechaSeleccionada = input.value;
+    
+    if (!fechaSeleccionada) return;
+
+    let fechaObj = new Date(fechaSeleccionada + 'T00:00:00');
+    let diaSemana = fechaObj.getDay(); // 0 = Domingo
+
+    if (diaSemana === 0 || feriadosLista.includes(fechaSeleccionada)) {
+        alert("La fecha seleccionada es Domingo o Feriado. Por favor, elija un día laboral.");
+        input.value = ''; // Limpiamos el input para obligar a elegir otro día
+    }
+}
+
+// NUEVA VERSIÓN ADAPTADA A DÍAS DE LA SEMANA (0=Lunes, 5=Sábado)
+function calcularSegundoDiaDesdeSemana(diaIndexStr) {
+    const feriadosLista = JSON.parse('{{ feriados_json | safe }}' || '[]');
+    const select = document.getElementById('select_segundo_dia');
+    
+    if (!diaIndexStr) return;
+
+    const objetivo = parseInt(diaIndexStr) + 1; // Ajuste: 0 en tu HTML es Lunes, Date().getDay() usa 1 para Lunes.
+    let fechaSimulada = new Date();
+    
+    // Buscar la próxima fecha que coincida con el día seleccionado
+    let diferencia = (objetivo + 7 - fechaSimulada.getDay()) % 7;
+    fechaSimulada.setDate(fechaSimulada.getDate() + diferencia);
+    fechaSimulada.setHours(0,0,0,0);
+
     let diasSumados = 0;
     
     // Regla de +2 días hábiles
     while (diasSumados < 2) {
-        fecha.setDate(fecha.getDate() + 1);
+        fechaSimulada.setDate(fechaSimulada.getDate() + 1);
+        let diaSemana = fechaSimulada.getDay(); // 0 es Domingo
+        let fechaISO = fechaSimulada.toISOString().split('T')[0];
         
-        let diaSemana = fecha.getDay(); // 0 es Domingo
-        let fechaISO = fecha.toISOString().split('T')[0];
-        
-        // Si no es domingo y no está en la lista de feriados, contamos el día
         if (diaSemana !== 0 && !feriadosLista.includes(fechaISO)) {
             diasSumados++;
         }
     }
 
-    // Poblar el selector
-    const select = document.getElementById('select_segundo_dia');
-    const fechaFinal = fecha.toISOString().split('T')[0];
-    
-    // Formato legible para el usuario (DD/MM/YYYY)
-    const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const fechaLegible = fecha.toLocaleDateString('es-PY', opciones).toUpperCase();
+    const opciones = { weekday: 'short', day: 'numeric', month: 'short' };
+    const textoLegible = fechaSimulada.toLocaleDateString('es-PY', opciones).toUpperCase();
 
-    select.innerHTML = `<option value="${fechaFinal}">${fechaLegible}</option>`;
-    
-    // Mostrar el div con una pequeña animación (si usas jQuery)
+    // Como guardas el día de la semana, guardamos el índice (Ajustando Lunes=0)
+    let nuevoDiaIndex = fechaSimulada.getDay() - 1; 
+    if (nuevoDiaIndex === -1) nuevoDiaIndex = 6; // Por si acaso cae domingo (no debería por el while)
+
+    select.innerHTML = `<option value="${nuevoDiaIndex}">Sugerido: ${textoLegible}</option>`;
     $('#div_segundo_dia').fadeIn();
+}
+
+function toggleFrecuencia() {
+    const frec = document.getElementById('select_frecuencia').value;
+    const div2do = document.getElementById('div_segundo_dia');
+    // Obtenemos el selector que ya tienes en el HTML
+    const diaSeleccionado = document.querySelector('select[name="dia_semana"]').value;
+    
+    if (frec === 'SEMANAL_2X') {
+        $(div2do).fadeIn();
+        if (diaSeleccionado !== "") {
+            calcularSegundoDiaDesdeSemana(diaSeleccionado);
+        }
+    } else {
+        $(div2do).fadeOut();
+    }
 }
 
 document.addEventListener('change', function(e) {
@@ -596,34 +710,26 @@ function prepararReagendar(id, cliente, fecha, cuadrilla, servicio, hora) {
     $('#modalReagendar').modal('show');
 }
 
-function toggleFrecuencia() {
-    const frec = document.getElementById('select_frecuencia').value;
-    const div2do = document.getElementById('div_segundo_dia');
-    div2do.style.display = (frec === 'SEMANAL_2X') ? 'block' : 'none';
-    const fechaSeleccionada = this.value;
-    calcularSegundoDia(fechaSeleccionada);
 
-}
-
-document.getElementsByName('dia_semana')[0].addEventListener('change', function() {
-    const dia1 = parseInt(this.value);
-    const select2 = document.getElementById('select_segundo_dia');
-    const diasLabel = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    
-    select2.innerHTML = '';
-    // Regla: día1 + 3 (para que haya 2 días libres en el medio)
-    // Ejemplo: Lunes(0) + 3 = Jueves(3). 
-    for (let i = dia1 + 3; i <= 5; i++) {
-        let opt = document.createElement('option');
-        opt.value = i;
-        opt.innerHTML = diasLabel[i];
-        select2.appendChild(opt);
-    }
-    
-    if (select2.options.length === 0) {
-        select2.innerHTML = '<option>No hay días hábiles suficientes</option>';
-    }
-});
+//document.getElementsByName('dia_semana')[0].addEventListener('change', function() {
+//    const dia1 = parseInt(this.value);
+//    const select2 = document.getElementById('select_segundo_dia');
+//    const diasLabel = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+//    
+//    select2.innerHTML = '';
+//    // Regla: día1 + 3 (para que haya 2 días libres en el medio)
+//    // Ejemplo: Lunes(0) + 3 = Jueves(3). 
+//    for (let i = dia1 + 3; i <= 5; i++) {
+//        let opt = document.createElement('option');
+//        opt.value = i;
+//        opt.innerHTML = diasLabel[i];
+//        select2.appendChild(opt);
+//    }
+//    
+//    if (select2.options.length === 0) {
+//        select2.innerHTML = '<option>No hay días hábiles suficientes</option>';
+//    }
+//});
 
 $('.btn-reagendar').on('click', function() {
     const d = $(this).data();

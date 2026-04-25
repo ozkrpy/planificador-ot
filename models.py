@@ -17,6 +17,11 @@ convention = {
 metadata = MetaData(naming_convention=convention)
 db = SQLAlchemy(metadata=metadata)
 
+miembros_cuadrilla = db.Table('miembros_cuadrilla',
+        db.Column('configuracion_cuadrilla_id', db.Integer, db.ForeignKey('configuracion_cuadrilla.id'), primary_key=True),
+        db.Column('personal_id', db.Integer, db.ForeignKey('personal.id'), primary_key=True)
+    )
+
 class Feriado(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fecha = db.Column(db.Date, unique=True, nullable=False)
@@ -136,7 +141,7 @@ class Visita(db.Model):
     cliente = db.relationship('Cliente', backref='visitas_programadas')
     ubicacion = db.relationship('Ubicacion', backref='visitas_en_sitio')
     recurrencia = db.relationship('Recurrencia', backref='instancias_visita')
-    detalles = db.relationship('DetalleVisita', backref='visita', lazy=True)
+    detalles = db.relationship('DetalleVisita', backref='visita', lazy=True, cascade="all, delete-orphan")
     vehiculo = db.relationship('Vehiculo', backref='visitas')
 
 class DetalleVisita(db.Model):
@@ -168,16 +173,21 @@ class Personal(db.Model):
     telefono = db.Column(db.String(20))
     sueldo_base = db.Column(db.Integer, default=0) # Placeholder para Payroll
     activo = db.Column(db.Boolean, default=True)
+    
 
 class Vehiculo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    denominacion = db.Column(db.String(100)) # Ej: Toyota Hilux 01
+    denominacion = db.Column(db.String(100))
     chapa = db.Column(db.String(20), unique=True)
-    tipo = db.Column(db.String(50)) # CAMIONETA, MOTOCARRO, AUTO
+    tipo = db.Column(db.String(50))
+    # Aquí aparecerá automáticamente la propiedad .cuadrillas gracias al backref
 
 class ConfiguracionCuadrilla(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nombre_cuadrilla = db.Column(db.String(50), unique=True) # CUADRILLA 1, CUADRILLA 2
+    nombre_cuadrilla = db.Column(db.String(50), unique=True)
     vehiculo_default_id = db.Column(db.Integer, db.ForeignKey('vehiculo.id'))
     
-    vehiculo_default = db.relationship('Vehiculo')    
+    integrantes = db.relationship('Personal', 
+        secondary=miembros_cuadrilla, 
+        backref=db.backref('cuadrillas_pertenece', lazy='dynamic'))
+    vehiculo_default = db.relationship('Vehiculo', backref='cuadrillas')

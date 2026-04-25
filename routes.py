@@ -2,6 +2,7 @@ from flask import abort, app, flash, json, jsonify, redirect, render_template, r
 from flask_login import login_user, logout_user, current_user, login_required
 from urllib.parse import urlsplit # from werkzeug.urls import url_parse
 from sqlalchemy import func, extract
+from sqlalchemy.orm import joinedload
 from models import db, User, Cliente, Ubicacion, Categoria, Recurrencia, Visita, Feriado, DetalleVisita, Personal, Vehiculo, ConfiguracionCuadrilla
 from formularios import LoginForm
 from utilitarios import calcular_total, calcular_proximo_dia, agrupar_por_semana
@@ -260,59 +261,93 @@ def init_routes(app):
 
 
 # AGENDAMIENTOS MODULE
+    # @app.route('/agendamientos')
+    # @login_required
+    # def agendamientos():
+
+    #     from datetime import date, timedelta
+    #     hoy = date.today()
+    #     fin_semana = hoy + timedelta(days=7) # Definimos el rango de 7 días
+        
+    #     feriados = Feriado.query.all()
+    #     # Creamos una lista de strings 'YYYY-MM-DD'
+    #     feriados_list = [f.fecha.strftime('%Y-%m-%d') for f in feriados if f.no_laboral]
+
+    #     # 1. Traer visitas de Cuadrilla 1 (desde hoy en adelante)
+    #     query_c1 = Visita.query.filter(
+    #         Visita.cuadrilla == '1',
+    #         Visita.fecha >= hoy,
+    #         Visita.estado != 'CANCELADO'
+    #     ).order_by(Visita.fecha.asc())
+
+    #     # 2. Traer visitas de Cuadrilla 2 (desde hoy en adelante)
+    #     query_c2 = Visita.query.filter(
+    #         Visita.cuadrilla == '2',
+    #         Visita.fecha >= hoy,
+    #         Visita.estado != 'CANCELADO'
+    #     ).order_by(Visita.fecha.asc())
+
+    #     # 3. Aplicar la agrupación
+    #     semanas_c1 = agrupar_por_semana(query_c1.all())
+    #     semanas_c2 = agrupar_por_semana(query_c2.all())
+
+
+    #     # Filtramos visitas en el rango de fechas y ordenamos por fecha
+    #     # visitas_c1 = Visita.query.filter(
+    #     #     Visita.fecha >= hoy, 
+    #     #     Visita.fecha <= fin_semana, 
+    #     #     Visita.cuadrilla == 1
+    #     # ).order_by(Visita.fecha.asc()).all()
+        
+    #     # visitas_c2 = Visita.query.filter(
+    #     #     Visita.fecha >= hoy, 
+    #     #     Visita.fecha <= fin_semana, 
+    #     #     Visita.cuadrilla == 2
+    #     # ).order_by(Visita.fecha.asc()).all()
+        
+    #     clientes = Cliente.query.order_by(Cliente.nombre).all()
+        
+    #     return render_template('agendamientos.html', 
+    #                         semanas_c1=semanas_c1, 
+    #                         semanas_c2=semanas_c2, 
+    #                         clientes=clientes,
+    #                         hoy=hoy,
+        #                         feriados_json=json.dumps(feriados_list))
     @app.route('/agendamientos')
     @login_required
     def agendamientos():
-
         from datetime import date, timedelta
+        import json
+
         hoy = date.today()
-        fin_semana = hoy + timedelta(days=7) # Definimos el rango de 7 días
         
+        # 1. Traer todas las cuadrillas configuradas (La tabla maestra)
+        cuadrillas = ConfiguracionCuadrilla.query.all()
+        
+        # 2. Traer todos los vehículos (para los selects de los formularios)
+        vehiculos = Vehiculo.query.all()
+
+        # 3. Traer TODAS las visitas activas desde hoy
+        # Nota: Ya no filtramos por cuadrilla '1' o '2' manualmente aquí
+        visitas = Visita.query.filter(
+            Visita.fecha >= hoy,
+            Visita.estado != 'CANCELADO'
+        ).order_by(Visita.fecha.asc()).all()
+
+        # 4. Feriados para el calendario
         feriados = Feriado.query.all()
-        # Creamos una lista de strings 'YYYY-MM-DD'
         feriados_list = [f.fecha.strftime('%Y-%m-%d') for f in feriados if f.no_laboral]
 
-        # 1. Traer visitas de Cuadrilla 1 (desde hoy en adelante)
-        query_c1 = Visita.query.filter(
-            Visita.cuadrilla == '1',
-            Visita.fecha >= hoy,
-            Visita.estado != 'CANCELADO'
-        ).order_by(Visita.fecha.asc())
-
-        # 2. Traer visitas de Cuadrilla 2 (desde hoy en adelante)
-        query_c2 = Visita.query.filter(
-            Visita.cuadrilla == '2',
-            Visita.fecha >= hoy,
-            Visita.estado != 'CANCELADO'
-        ).order_by(Visita.fecha.asc())
-
-        # 3. Aplicar la agrupación
-        semanas_c1 = agrupar_por_semana(query_c1.all())
-        semanas_c2 = agrupar_por_semana(query_c2.all())
-
-
-        # Filtramos visitas en el rango de fechas y ordenamos por fecha
-        # visitas_c1 = Visita.query.filter(
-        #     Visita.fecha >= hoy, 
-        #     Visita.fecha <= fin_semana, 
-        #     Visita.cuadrilla == 1
-        # ).order_by(Visita.fecha.asc()).all()
-        
-        # visitas_c2 = Visita.query.filter(
-        #     Visita.fecha >= hoy, 
-        #     Visita.fecha <= fin_semana, 
-        #     Visita.cuadrilla == 2
-        # ).order_by(Visita.fecha.asc()).all()
-        
         clientes = Cliente.query.order_by(Cliente.nombre).all()
         
+        # 5. Pasamos 'cuadrillas', 'visitas' y 'vehiculos' al template
         return render_template('agendamientos.html', 
-                            semanas_c1=semanas_c1, 
-                            semanas_c2=semanas_c2, 
-                            clientes=clientes,
-                            hoy=hoy,
-                            feriados_json=json.dumps(feriados_list))
-
+                                cuadrillas=cuadrillas,
+                                visitas=visitas,
+                                vehiculos=vehiculos,
+                                clientes=clientes,
+                                hoy=hoy,
+                                feriados_json=json.dumps(feriados_list))
 
     @app.route('/crear-recurrencia', methods=['POST'])
     @login_required
@@ -473,21 +508,6 @@ def init_routes(app):
         return redirect(url_for('agendamientos'))
     
    # Ruta para guardar la configuración de defaults
-    @app.route('/gestion/configurar-cuadrilla', methods=['POST'])
-    @login_required
-    def configurar_cuadrilla():
-        nombre = request.form.get('nombre_cuadrilla')
-        v_id = request.form.get('vehiculo_id')
-        
-        config = ConfiguracionCuadrilla.query.filter_by(nombre_cuadrilla=nombre).first()
-        if not config:
-            config = ConfiguracionCuadrilla(nombre_cuadrilla=nombre)
-            db.session.add(config)
-        
-        config.vehiculo_default_id = v_id
-        db.session.commit()
-        flash(f"Vehículo predeterminado para {nombre} actualizado.", "success")
-        return redirect(url_for('gestion_personal')) 
 
     @app.route('/visita/reagendar/<int:id>', methods=['POST'])
     @login_required
@@ -728,9 +748,33 @@ def init_routes(app):
     @app.route('/gestion/personal')
     @login_required
     def gestion_personal():
+
+        vehiculos = Vehiculo.query.all()
+        
         staff = Personal.query.all()
         vehiculos = Vehiculo.query.all()
-        return render_template('personal.html', staff=staff, vehiculos=vehiculos)
+        # cuadrillas = ConfiguracionCuadrilla.query.all()
+        cuadrillas = ConfiguracionCuadrilla.query.options(
+                joinedload(ConfiguracionCuadrilla.vehiculo_default)
+            ).all()
+        # for c in cuadrillas:    
+        #     print(c)
+        #     print(f"Cuadrilla: {c.nombre_cuadrilla}, Vehículo por defecto: {c.vehiculo_default.denominacion if c.vehiculo_default else 'Ninguno'}, Integrantes: {[p.nombre for p in c.integrantes]}")
+        
+        # Diccionario de listas: { id_vehiculo: ["Cuadrilla A", "Cuadrilla B"] }
+        asignaciones = {}
+        for c in cuadrillas:
+            if c.vehiculo_default:
+                v_id = c.vehiculo_default.id
+                if v_id not in asignaciones:
+                    asignaciones[v_id] = []
+                asignaciones[v_id].append(c.nombre_cuadrilla)
+
+        return render_template('personal.html', 
+                            staff=staff, 
+                            vehiculos=vehiculos, 
+                            asignaciones=asignaciones,
+                            cuadrillas=cuadrillas)
 
     @app.route('/gestion/personal/guardar', methods=['POST'])
     @login_required
@@ -750,7 +794,91 @@ def init_routes(app):
         
         db.session.commit()
         return redirect(url_for('gestion_personal'))
+    
+    @app.route('/gestion/guardar-cuadrilla', methods=['POST'])
+    @login_required
+    def guardar_cuadrilla():
+        id_cuadrilla = request.form.get('cuadrilla_id')
+        nombre = request.form.get('nombre_cuadrilla')
+        id_vehiculo = request.form.get('vehiculo_id')
+        
+        # Obtenemos la lista de IDs seleccionados en el select múltiple
+        ids_personal = request.form.getlist('personal_ids') # Retorna lista de IDs ['1', '5']
 
+        if id_cuadrilla:
+            cuadrilla = ConfiguracionCuadrilla.query.get(id_cuadrilla)
+        else:
+            cuadrilla = ConfiguracionCuadrilla()
+
+        cuadrilla.nombre_cuadrilla = nombre
+        cuadrilla.vehiculo_default_id = id_vehiculo
+        
+        # Sincronizamos los integrantes
+        # Buscamos los objetos Personal correspondientes a los IDs recibidos
+        cuadrilla.integrantes = Personal.query.filter(Personal.id.in_(ids_personal)).all()
+
+        db.session.add(cuadrilla)
+        db.session.commit()
+        return redirect(url_for('gestion_personal'))
+    
+    @app.route('/gestion/eliminar-cuadrilla/<int:id>')
+    def eliminar_cuadrilla(id):
+        cuadrilla = ConfiguracionCuadrilla.query.get_or_404(id)
+        db.session.delete(cuadrilla)
+        db.session.commit()
+        return redirect(url_for('gestion_personal'))
+
+    @app.route('/gestion/remover-miembro/<int:cuadrilla_id>/<int:personal_id>')
+    @login_required
+    def remover_miembro(cuadrilla_id, personal_id):
+        # Localizamos la cuadrilla y el miembro del staff
+        cuadrilla = ConfiguracionCuadrilla.query.get_or_404(cuadrilla_id)
+        miembro = Personal.query.get_or_404(personal_id)
+        
+        # Si el miembro pertenece a la cuadrilla, lo removemos de la lista
+        if miembro in cuadrilla.integrantes:
+            cuadrilla.integrantes.remove(miembro)
+            db.session.commit()
+            
+        return redirect(url_for('gestion_personal'))
+    
+    @app.route('/gestion/configurar-cuadrilla', methods=['POST'])
+    # @login_required
+    # def configurar_cuadrilla():
+    #     nombre = request.form.get('nombre_cuadrilla')
+    #     v_id = request.form.get('vehiculo_id')
+        
+    #     config = ConfiguracionCuadrilla.query.filter_by(nombre_cuadrilla=nombre).first()
+    #     if not config:
+    #         config = ConfiguracionCuadrilla(nombre_cuadrilla=nombre)
+    #         db.session.add(config)
+        
+    #     config.vehiculo_default_id = v_id
+    #     db.session.commit()
+    #     flash(f"Vehículo predeterminado para {nombre} actualizado.", "success")
+    #     return redirect(url_for('gestion_personal')) 
+    @login_required
+    def configurar_cuadrilla():
+        # Obtenemos los IDs del formulario
+        cuadrilla_id = request.form.get('cuadrilla_id')
+        vehiculo_id = request.form.get('vehiculo_id')
+
+        if not cuadrilla_id or not vehiculo_id:
+            flash("Por favor, seleccione ambos campos.", "warning")
+            return redirect(url_for('gestion_personal'))
+
+        # Buscamos la cuadrilla en la base de datos
+        cuadrilla = ConfiguracionCuadrilla.query.get(cuadrilla_id)
+        
+        if cuadrilla:
+            # Actualizamos el vehículo asignado por defecto
+            cuadrilla.vehiculo_default_id = vehiculo_id
+            db.session.commit()
+            flash(f"Logística de {cuadrilla.nombre_cuadrilla} actualizada.", "success")
+        
+        return redirect(url_for('gestion_personal'))
+
+    
 # API ENDPOINTS
     @app.route('/api/ubicaciones/<int:cliente_id>')
     @login_required

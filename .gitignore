@@ -13,3 +13,5 @@ instance/
 .env
 
 *.csv
+
+dummy.html
