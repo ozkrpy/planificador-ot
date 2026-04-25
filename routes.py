@@ -177,7 +177,7 @@ def init_routes(app):
                 db.session.add(ubi)
             
         db.session.commit()
-        flash("Registro guardado exitosamente.", "success")
+        flash("Nuevo cliente/proveedor guardado exitosamente.", "success")
         return redirect(url_for('clientes'))
 
     @app.route('/clientes/editar/<int:id>', methods=['GET', 'POST'])
@@ -334,6 +334,9 @@ def init_routes(app):
             Visita.estado != 'CANCELADO'
         ).order_by(Visita.fecha.asc()).all()
 
+        for v in visitas:
+            print(f"Visita ID {v.id} - Cliente: {v.cliente.nombre} - Fecha: {v.fecha} - Estado: {v.estado} - Cuadrilla: {v.cuadrilla} - Servicio: {v.servicio}")
+
         # 4. Feriados para el calendario
         feriados = Feriado.query.all()
         feriados_list = [f.fecha.strftime('%Y-%m-%d') for f in feriados if f.no_laboral]
@@ -366,7 +369,6 @@ def init_routes(app):
         dia1 = int(request.form.get('dia_semana'))  
 
         try:
-            # 2. Crear el registro maestro de Recurrencia
             nueva_regla = Recurrencia(
                 cliente_id=cliente_id,
                 ubicacion_id=ubicacion_id,

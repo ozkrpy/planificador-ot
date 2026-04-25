@@ -5,6 +5,9 @@
 $env:FLASK_APP = "app.py"
 $env:FLASK_DEBUG = "1" 
 
+# loguear en consola de html + javascript 
+console.log(`Iniciando abrirFacturacion para ID: ${id}, Cliente: ${cliente}`);
+
 # DB 
 # Initialize Migrations:
 flask db init

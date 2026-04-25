@@ -43,7 +43,7 @@ TEXTOS = {
     "TIPO_PAISAJISMO": "Paisajismo (Piedras/Deco)",
     "TIPO_MACETAS": "Macetas",
     "TIPO_JARDINES": "Mantenimiento/Limpieza",
-    "BOTON_NUEVO_CLIENTE": "Agregar Registro",
+    "BOTON_NUEVO_CLIENTE": "Registrar Nuevo Cliente/Proveedor",
     "AGENDAMIENTOS": "Agendamientos",
 
 }

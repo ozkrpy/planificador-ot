@@ -258,7 +258,7 @@
                                 </tr>
                                 {% endfor %}
 
-                                {# --- SECCIÓN 3: REGISTROS SIN CATEGORÍA (Opcional) --- #}
+                                {# --- SECCIÓN 3: REGISTROS SIN CATEGORÍA --- #}
                                 {% set sin_cat = clientes | selectattr('categoria_id', 'none') | list %}
                                 {% if sin_cat %}
                                 <tr class="bg-warning text-dark border-top">
