@@ -94,6 +94,13 @@ class Ubicacion(db.Model):
     cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'), nullable=False)
     nombre_sucursal = db.Column(db.String(100)) # e.g., "Casa Quinta", "Residencia Principal"
     coordenadas_url = db.Column(db.String(255)) # Google Maps Link or Coords
+    latitud = db.Column(db.Float, nullable=True)
+    longitud = db.Column(db.Float, nullable=True)
+    calle_principal = db.Column(db.String(100), nullable=True)
+    calle_secundaria = db.Column(db.String(100), nullable=True)
+    barrio = db.Column(db.String(100), nullable=True)
+    ciudad = db.Column(db.String(100), nullable=True)
+    grupo = db.Column(db.String(50), nullable=True) # Para segmentar clientes en zonas o grupos
 
 class Recurrencia(db.Model):
     __tablename__ = 'recurrencias'
@@ -110,7 +117,7 @@ class Recurrencia(db.Model):
     segundo_dia = db.Column(db.Integer, nullable=True) # Para el esquema 2x semana
     ultimo_generado = db.Column(db.Date, nullable=True) # Para control de Quincenal/Mensual
     dia_semana = db.Column(db.Integer) # 0=Lunes, 1=Martes...
-    cuadrilla_id = db.Column(db.Integer) # 1 o 2
+    cuadrilla_id = db.Column(db.Integer, db.ForeignKey('configuracion_cuadrilla.id'), nullable=True)
     activo = db.Column(db.Boolean, default=True)
     hora_sugerida = db.Column(db.Time, nullable=True) # Nueva columna
 
@@ -186,7 +193,9 @@ class ConfiguracionCuadrilla(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre_cuadrilla = db.Column(db.String(50), unique=True)
     vehiculo_default_id = db.Column(db.Integer, db.ForeignKey('vehiculo.id'))
+    color_identificador = db.Column(db.String(7), default="#10461d") # Para calendarios/UI
     
+    reglas_asignadas = db.relationship('Recurrencia', backref='config_cuadrilla', lazy=True)
     integrantes = db.relationship('Personal', 
         secondary=miembros_cuadrilla, 
         backref=db.backref('cuadrillas_pertenece', lazy='dynamic'))

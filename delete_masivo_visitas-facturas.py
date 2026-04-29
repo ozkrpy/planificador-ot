@@ -12,14 +12,14 @@ def clean_transactional_data():
             db.session.query(Visita).delete()
             print("- Historial de visitas limpio.")
 
-            db.session.query(ConfiguracionCuadrilla).delete()
-            print("- Configuraciones de cuadrilla reiniciadas.")
+            # db.session.query(ConfiguracionCuadrilla).delete()
+            # print("- Configuraciones de cuadrilla reiniciadas.")
 
-            db.session.query(Personal).delete()
-            print("- Configuraciones de Personal reiniciadas.")
+            # db.session.query(Personal).delete()
+            # print("- Configuraciones de Personal reiniciadas.")
             
-            db.session.query(Vehiculo).delete()
-            print("- Configuraciones de Vehículos reiniciadas.")
+            # db.session.query(Vehiculo).delete()
+            # print("- Configuraciones de Vehículos reiniciadas.")
             
             db.session.query(Recurrencia).delete()
             print("- Configuraciones de recurrencias reiniciadas.")

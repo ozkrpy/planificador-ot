@@ -1,4 +1,5 @@
 # ACTIVAR ENTORNO PRUEBAS
+python -m venv .venv
 .\venv\Scripts\Activate.ps1
 
 # SETEAR VARIABLES DE ENTORNO 

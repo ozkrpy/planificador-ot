@@ -472,3 +472,48 @@ tr[style*="background-color: #14212f"] { background-color: var(--gray-900) !impo
     overflow-y: auto;
     scrollbar-width: thin;
 }
+
+#busqueda_cliente::placeholder {
+    color: #adb5bd;
+    font-weight: 500;
+}
+
+#busqueda_cliente:focus {
+    color: #1a4d2e; /* Color verde oscuro del tema */
+}
+
+.btn-stop-recurrence {
+    background-color: #fff1f0; /* Rojo muy tenue */
+    color: #d93025;           /* Rojo Google / Alerta */
+    border: 1px solid #ffccc7;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-stop-recurrence:hover {
+    background-color: #d93025;
+    color: #ffffff;
+    border-color: #d93025;
+    box-shadow: 0 2px 4px rgba(217, 48, 37, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-stop-recurrence i {
+    font-size: 0.9rem;
+}
+
+.btn-stop-recurrence span {
+    letter-spacing: 0.3px;
+}
+
+/* Ajuste para que Select2 use la misma fuente y altura que tus otros inputs */
+.select2-container--bootstrap4 .select2-selection--single {
+    height: calc(1.8125rem + 2px) !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+}
+
+.select2-search__field {
+    font-size: 0.8rem !important;
+    text-transform: uppercase;
+}

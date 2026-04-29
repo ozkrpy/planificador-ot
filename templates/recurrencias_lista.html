@@ -24,7 +24,7 @@
                         <th style="width: 20%;">Ubicación</th>
                         <th class="text-center">Sugerencia Día/Hora</th>
                         <th class="text-center">Asignación</th>
-                        <th>Tipo de Servicio</th>
+                        <th>Tipo de Servicio/Frecuencia</th>
                         <th class="text-right">Gestión</th>
                     </tr>
                 </thead>
@@ -45,33 +45,40 @@
                         <td class="text-center">
                             {% set dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] %}
                             <span class="badge badge-day shadow-sm">
-                                <i class="fa-regular fa-calendar mr-1"></i>{{ dias[r.dia_semana] }}
+                                <i class="fa-regular fa-calendar mr-1"></i>{{ dias[r.dia_semana] }}, a las {{ r.hora_sugerida.strftime('%H:%M') }}
                             </span>
                         </td>
                         <td class="text-center">
-                            <span class="badge badge-cuadrilla">
-                                CUADRILLA {{ r.cuadrilla_id }}
-                            </span>
+                            {% if r.config_cuadrilla %}
+                                <span class="badge badge-cuadrilla">
+                                    <i class="fa-solid fa-users-gear"></i>
+                                    {{ r.config_cuadrilla.nombre_cuadrilla | upper }} 
+                                </span>
+                            {% else %}
+                                <span class="badge badge-secondary shadow-sm">
+                                    SIN ASIGNAR
+                                </span>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="text-service-tag text-uppercase">
-                                {{ r.servicio }}
+                                {{ r.servicio }}/{{ r.frecuencia }}
                             </span>
                         </td>
                         <td class="text-right">
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">
-                                    Opciones
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-right shadow border-0">
-                                    <form action="{{ url_for('eliminar_recurrencia', id=r.id) }}" method="POST" 
-                                          onsubmit="return confirm('¿Detener esta programación automática?');">
-                                        <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
-                                            <i class="fa-solid fa-stop-circle mr-2 opacity-75"></i>
-                                            <span class="small font-weight-bold">Detener Recurrencia</span>
-                                        </button>
-                                    </form>
-                                </div>
+                            <div class="d-flex align-items-center">
+                                <form action="{{ url_for('eliminar_recurrencia', id=r.id) }}" 
+                                    method="POST" 
+                                    onsubmit="return confirm('¿Está seguro de que desea detener esta programación automática?');"
+                                    class="m-0">
+                                    
+                                    <button type="submit" 
+                                            class="btn btn-stop-recurrence d-flex align-items-center px-3 py-1"
+                                            title="Detener regla de programación">
+                                        <i class="fa-solid fa-circle-stop mr-2"></i>
+                                        <span class="small font-weight-bold">DETENER RECURRENCIA</span>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

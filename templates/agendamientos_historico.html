@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block main %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="h4 font-weight-bold text-dark-green mb-0 text-uppercase">Histórico Global de Visitas</h2>
+            <p class="header-subtitle mb-0 text-uppercase">Registro de servicios y estados de pago por cliente</p>
+        </div>
+        <a href="{{ url_for('agendamientos') }}" class="btn btn-sm btn-light border">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Volver al calendario de agendamientos
+        </a>
+    </div>
+
+    {% for cliente, visitas in agrupados.items() %}
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="mb-0 font-weight-bold text-dark">
+                <i class="fa-solid fa-user text-muted mr-2"></i>{{ cliente|upper }}
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" style="table-layout: fixed;">
+                    <thead class="bg-light x-small font-weight-bold text-uppercase">
+                        <tr>
+                            <th class="pl-4" style="width: 15%;">Fecha</th>
+                            <th style="width: 20%;">Servicio / Sucursal</th>
+                            <th style="width: 35%;">Desglose de Ítems</th>
+                            <th class="text-center" style="width: 15%;">Estado Visita</th>
+                            <th class="text-right pr-4" style="width: 15%;">Finanzas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in visitas %}
+                        <tr class="align-middle">
+                            <td class="pl-4">
+                                <div class="font-weight-bold" style="font-size: 0.85rem;">{{ v.fecha.strftime('%d/%m/%Y') }}</div>
+                                <div class="text-muted x-small">{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else 'S/H' }} HS</div>
+                            </td>
+                            <td>
+                                <div class="small font-weight-bold text-truncate text-uppercase">{{ v.servicio }}</div>
+                                <div class="x-small text-muted text-truncate">
+                                    <i class="fa-solid fa-location-dot mr-1"></i>{{ v.ubicacion.nombre_sucursal if v.ubicacion else 'S/N' }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    {% for item in v.detalles %}
+                                    <div class="x-small d-flex justify-content-between mb-1 border-bottom-dotted pb-1">
+                                        <span class="text-truncate mr-2">{{ item.cantidad|int }}x {{ item.descripcion }}</span>
+                                        <span class="font-weight-bold {% if item.estado_pago == 'PAGADO' %}text-success{% else %}text-danger{% endif %}">
+                                            {{ item.total | number_format }}
+                                        </span>
+                                    </div>
+                                    {% else %}
+                                    <span class="x-small text-muted italic">No se cargaron ítems de facturación</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                {% if v.estado == 'COMPLETADO' %}
+                                    <span class="badge badge-success-soft text-success px-2 py-1 x-small font-weight-bold">COMPLETADO</span>
+                                {% elif v.estado == 'PENDIENTE' %}
+                                    <span class="badge badge-warning-soft text-warning px-2 py-1 x-small font-weight-bold">PENDIENTE</span>
+                                {% else %}
+                                    <span class="badge badge-secondary-soft text-muted px-2 py-1 x-small font-weight-bold">{{ v.estado }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right pr-4">
+                                {% set total_visita = v.detalles|sum(attribute='total') %}
+                                {% set items_pagados = v.detalles|selectattr('estado_pago', 'equalto', 'PAGADO')|list|length %}
+                                {% set total_items = v.detalles|length %}
+
+                                <div class="d-flex flex-column">
+                                    <span class="font-weight-bold text-dark">{{ total_visita | number_format }} Gs.</span>
+                                    
+                                    {% if total_items > 0 %}
+                                        {% if items_pagados == total_items %}
+                                            <span class="x-small text-success font-weight-bold"><i class="fa-solid fa-check-double mr-1"></i>PAGADO</span>
+                                        {% elif items_pagados > 0 %}
+                                            <span class="x-small text-info font-weight-bold"><i class="fa-solid fa-circle-minus mr-1"></i>PARCIAL</span>
+                                        {% else %}
+                                            <span class="x-small text-danger font-weight-bold"><i class="fa-solid fa-clock mr-1"></i>PENDIENTE</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card shadow-sm border-0">
+        <div class="card-body text-center text-muted py-5">
+            <i class="fa-solid fa-calendar-xmark fa-3x mb-3"></i>
+            <h5 class="mb-0">No se encontraron registros de visitas históricas.</h5>
+            <small class="text-muted ">Una vez que se completen las visitas agendadas, aparecerán aquí para su revisión.</small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .border-bottom-dotted { border-bottom: 1px dotted #dee2e6; }
+    .badge-success-soft { background-color: #e8f5e9; color: #2e7d32; }
+    .badge-warning-soft { background-color: #fff3e0; color: #ef6c00; }
+    .badge-secondary-soft { background-color: #f5f5f5; color: #757575; }
+    .x-small { font-size: 0.7rem; }
+</style>
+{% endblock %}

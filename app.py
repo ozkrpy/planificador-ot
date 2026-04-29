@@ -29,6 +29,9 @@ def favicon():
 # Login Manager Setup
 login = LoginManager(app)
 login.login_view = 'login' # Where to redirect if @login_required fails
+login.init_app(app)
+login.login_message = "Por favor, inicia sesión para acceder a esta página."
+login.login_message_category = "info"
 
 @login.user_loader
 def load_user(id):

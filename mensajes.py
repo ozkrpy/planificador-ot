@@ -36,6 +36,7 @@ TEXTOS = {
     "ALERT_USER_ACTUALIZADO": "Datos actualizados correctamente.",
     "ERROR_PERMISO": "No tiene permiso para editar este perfil.",
     "CLIENTES_TITULO": "Registro de Clientes y Proveedores",
+    "CLIENTE_UBI_AGRUPADOR": "Agrupador",
     "TABLA_TIPO": "Tipo de Entidad",
     "TIPO_CLIENTE": "Cliente Final",
     "TIPO_QUIMICOS": "Proveedor: Químicos Piscina",

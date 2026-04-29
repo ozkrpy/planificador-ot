@@ -31,7 +31,21 @@
             </div>
         </div>
 
-        <div class="col"></div>
+        <div class="col d-flex align-items-center px-4">
+            <div class="input-group shadow-sm border rounded-pill bg-white px-3 py-1">
+                <div class="input-group-prepend border-0">
+                    <span class="input-group-text bg-transparent border-0 text-muted">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                </div>
+                <input type="text" 
+                    id="busqueda_cliente" 
+                    class="form-control border-0 shadow-none bg-transparent" 
+                    placeholder="BUSCAR POR NOMBRE DE CLIENTE..."
+                    onkeyup="filtrarFacturacion()"
+                    style="font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px;">
+            </div>
+        </div>
 
         <div class="col-auto d-flex">
             <div class="card border-0 shadow-sm border-left-dark h-100" style="border-left: 4px solid #838383 !important;">
@@ -167,6 +181,33 @@
 
 {% block scripts %}
 <script>
+function filtrarFacturacion() {
+    // 1. Obtener el valor de búsqueda
+    const input = document.getElementById('busqueda_cliente');
+    const filter = input.value.toUpperCase().trim();
+    
+    // 2. Seleccionar todas las columnas que contienen tarjetas de clientes
+    // Basado en la estructura: col-xl-3 col-lg-4 mb-4
+    const tarjetasClientes = document.querySelectorAll('.col-xl-3.col-lg-4');
+
+    tarjetasClientes.forEach(col => {
+        // Buscamos el nombre dentro del span de la cabecera
+        const nombreSpan = col.querySelector('.card-header-custom span.font-weight-bold');
+        
+        if (nombreSpan) {
+            const nombreTexto = nombreSpan.textContent || nombreSpan.innerText;
+            
+            // 3. Comparar y aplicar visibilidad
+            if (nombreTexto.toUpperCase().indexOf(filter) > -1) {
+                col.style.display = ""; // Mostrar
+                col.classList.add('d-flex'); // Mantener comportamiento de flex si se usa
+            } else {
+                col.style.display = "none"; // Ocultar
+                col.classList.remove('d-flex');
+            }
+        }
+    });
+}
 function pagarItem(id) {
     if(!confirm("¿Marcar solo este ítem como pagado?")) return;
     fetch(`/api/facturacion/actualizar-pago-item/${id}`, {

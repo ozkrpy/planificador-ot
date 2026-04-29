@@ -31,14 +31,14 @@ def init_routes(app):
         if form.validate_on_submit():
             user = User.query.filter_by(username=form.username.data).first()
             if user is None or not user.check_password(form.password.data):
-                flash(TEXTOS.get("ALERT_ERROR_LOGIN", "Invalid username or password"), "danger")
+                flash(TEXTOS.get("ALERT_ERROR_LOGIN", "Combinacion de usuario/contraseña invalida."), "danger")
                 return redirect(url_for('login'))
             login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next')
             if not next_page or urlsplit(next_page).netloc != '':
                 next_page = url_for('index')
             return redirect(next_page)
-        return render_template('login.html', title='Sign In', form=form)
+        return render_template('login.html', title='Iniciar Sesion', form=form)
 
     @app.route('/logout')
     def logout():
@@ -129,6 +129,10 @@ def init_routes(app):
         lista_clientes = base_query.order_by(Cliente.nombre).all()
         lista_categorias = Categoria.query.all()
 
+        # ubicaciones = Ubicacion.query.all() # PLACEHOLDER: Solo para extraer ubicaciones para verificar con googlemaps
+        # for u in ubicaciones: 
+        #     print(f"{u.id} | {u.coordenadas_url}")
+        
         return render_template('clientes_lista.html', 
                             clientes=lista_clientes, 
                             categorias=lista_categorias
@@ -164,18 +168,37 @@ def init_routes(app):
         db.session.add(nuevo_c)
         db.session.flush()
         
+        # Captura de todos los campos de ubicación
         nombres = request.form.getlist('ubi_nombre[]')
         urls = request.form.getlist('ubi_url[]')
+        ciudades = request.form.getlist('ubi_ciudad[]')
+        barrios = request.form.getlist('ubi_barrio[]')
+        calles = request.form.getlist('ubi_calle[]')
+        grupos = request.form.getlist('ubi_grupo[]')
 
-        for nombre, url in zip(nombres, urls):
-            if url.strip(): # Solo guardar si hay un link
+        # for nombre, url in zip(nombres, urls):
+        #     if url.strip(): # Solo guardar si hay un link
+        #         ubi = Ubicacion(
+        #             cliente_id=nuevo_c.id, 
+        #             nombre_sucursal=nombre or "Principal", 
+        #             coordenadas_url=url
+        #         )
+        #         db.session.add(ubi)
+
+        for data in zip(nombres, urls, ciudades, barrios, calles, grupos):
+            nombre, url, ciudad, barrio, calle, grupo = data
+            if url.strip() or nombre.strip(): # Guardar si tiene link o al menos un nombre
                 ubi = Ubicacion(
                     cliente_id=nuevo_c.id, 
                     nombre_sucursal=nombre or "Principal", 
-                    coordenadas_url=url
+                    coordenadas_url=url,
+                    ciudad=ciudad,
+                    barrio=barrio,
+                    calle_principal=calle,
+                    grupo=grupo
                 )
                 db.session.add(ubi)
-            
+
         db.session.commit()
         flash("Nuevo cliente/proveedor guardado exitosamente.", "success")
         return redirect(url_for('clientes'))
@@ -201,14 +224,28 @@ def init_routes(app):
             c.status = request.form.get('status')
             c.observaciones_detalladas = request.form.get('observaciones')
             
-            # Handle maps update if necessary (simplified for the primary location)
+            # Limpieza y actualización de ubicaciones
             Ubicacion.query.filter_by(cliente_id=c.id).delete()
+            
             nombres = request.form.getlist('ubi_nombre[]')
             urls = request.form.getlist('ubi_url[]')
+            ciudades = request.form.getlist('ubi_ciudad[]')
+            barrios = request.form.getlist('ubi_barrio[]')
+            calles = request.form.getlist('ubi_calle[]')
+            grupos = request.form.getlist('ubi_grupo[]')
 
-            for nombre, url in zip(nombres, urls):
-                if url.strip():
-                    nueva_ubi = Ubicacion(cliente_id=c.id, nombre_sucursal=nombre, coordenadas_url=url)
+            for data in zip(nombres, urls, ciudades, barrios, calles, grupos):
+                nombre, url, ciudad, barrio, calle, grupo = data
+                if url.strip() or nombre.strip():
+                    nueva_ubi = Ubicacion(
+                        cliente_id=c.id, 
+                        nombre_sucursal=nombre, 
+                        coordenadas_url=url,
+                        ciudad=ciudad,
+                        barrio=barrio,
+                        calle_principal=calle,
+                        grupo=grupo
+                    )
                     db.session.add(nueva_ubi)
             
             db.session.commit()
@@ -334,9 +371,6 @@ def init_routes(app):
             Visita.estado != 'CANCELADO'
         ).order_by(Visita.fecha.asc()).all()
 
-        for v in visitas:
-            print(f"Visita ID {v.id} - Cliente: {v.cliente.nombre} - Fecha: {v.fecha} - Estado: {v.estado} - Cuadrilla: {v.cuadrilla} - Servicio: {v.servicio}")
-
         # 4. Feriados para el calendario
         feriados = Feriado.query.all()
         feriados_list = [f.fecha.strftime('%Y-%m-%d') for f in feriados if f.no_laboral]
@@ -351,6 +385,27 @@ def init_routes(app):
                                 clientes=clientes,
                                 hoy=hoy,
                                 feriados_json=json.dumps(feriados_list))
+
+    from sqlalchemy.orm import joinedload
+
+    @app.route('/operaciones/historico')
+    @login_required
+    def historico_visitas():
+        # Cargamos visitas con sus relaciones para evitar múltiples consultas a la DB
+        todas_las_visitas = Visita.query.options(
+            joinedload(Visita.cliente),
+            joinedload(Visita.detalles)
+        ).order_by(Visita.fecha.desc()).all()
+        
+        # Agrupamos por cliente
+        agrupados = {}
+        for v in todas_las_visitas:
+            cliente_nom = v.cliente.nombre if v.cliente else "SIN CLIENTE"
+            if cliente_nom not in agrupados:
+                agrupados[cliente_nom] = []
+            agrupados[cliente_nom].append(v)
+
+        return render_template('agendamientos_historico.html', agrupados=agrupados)
 
     @app.route('/crear-recurrencia', methods=['POST'])
     @login_required
@@ -376,7 +431,7 @@ def init_routes(app):
                 dia_semana=dia_semana,
                 hora_sugerida=hora_obj,
                 servicio=servicio_elegido, 
-                frecuencia='Semanal',
+                frecuencia=frecuencia,
                 activo=True
             )
             db.session.add(nueva_regla)
@@ -448,7 +503,10 @@ def init_routes(app):
     @login_required
     def lista_recurrencias():
         # Obtenemos todas las recurrencias activas con los datos del cliente y ubicación
-        todas_recurrencias = Recurrencia.query.filter_by(activo=True).all()
+        # todas_recurrencias = Recurrencia.query.filter_by(activo=True).all()
+        todas_recurrencias = Recurrencia.query.filter_by(activo=True)\
+            .options(joinedload(Recurrencia.config_cuadrilla))\
+            .all()
         return render_template('recurrencias_lista.html', recurrencias=todas_recurrencias)
 
     @app.route('/recurrencias/eliminar/<int:id>', methods=['POST'])
@@ -759,9 +817,6 @@ def init_routes(app):
         cuadrillas = ConfiguracionCuadrilla.query.options(
                 joinedload(ConfiguracionCuadrilla.vehiculo_default)
             ).all()
-        # for c in cuadrillas:    
-        #     print(c)
-        #     print(f"Cuadrilla: {c.nombre_cuadrilla}, Vehículo por defecto: {c.vehiculo_default.denominacion if c.vehiculo_default else 'Ninguno'}, Integrantes: {[p.nombre for p in c.integrantes]}")
         
         # Diccionario de listas: { id_vehiculo: ["Cuadrilla A", "Cuadrilla B"] }
         asignaciones = {}

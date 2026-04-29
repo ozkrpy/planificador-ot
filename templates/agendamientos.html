@@ -11,21 +11,27 @@
             <i class="fa-solid fa-calendar-check fa-2x"></i>
         </div>
     </div>
-    <div class="bg-light-container text-right">
-        <div class="btn-group">
-            <button class="btn btn-outline-secondary btn-sm px-3 mr-2" data-toggle="modal" data-target="#modalVisitaEsporadica">
-                <i class="fa-solid fa-bolt mr-1"></i> Agendar visita no planeada
-            </button>
-            
-            <a href="{{ url_for('lista_recurrencias') }}" class="btn btn-outline-info btn-sm px-3 mr-2">
-                <i class="fa-solid fa-gears mr-1"></i> Config. Agendas de Clientes
-            </a>
-            
-            <button class="btn btn-dark-green btn-sm px-3" data-toggle="modal" data-target="#modalNuevaRecurrencia">
-                <i class="fa-solid fa-plus-circle mr-1"></i> Programar visitas periodicas   
-            </button>
-        </div>
+<div class="bg-light-container d-flex justify-content-between align-items-center flex-wrap">
+    <div class="mb-2">
+        <a href="{{ url_for('historico_visitas') }}" class="btn btn-outline-dark btn-sm px-3 shadow-sm">
+            <i class="fa-solid fa-clock-rotate-left mr-1"></i> HISTÓRICO DE VISITAS ANTERIORES
+        </a>
     </div>
+
+    <div class="btn-group mb-2">
+        <button class="btn btn-outline-secondary btn-sm px-3 mr-2" data-toggle="modal" data-target="#modalVisitaEsporadica">
+            <i class="fa-solid fa-bolt mr-1"></i> AGENDAR VISITA NO PLANEADA
+        </button>
+        
+        <a href="{{ url_for('lista_recurrencias') }}" class="btn btn-outline-info btn-sm px-3 mr-2">
+            <i class="fa-solid fa-gears mr-1"></i> CONFIG. AGENDAS DE CLIENTES
+        </a>
+        
+        <button class="btn btn-dark-green btn-sm px-3" data-toggle="modal" data-target="#modalNuevaRecurrencia">
+            <i class="fa-solid fa-plus-circle mr-1"></i> PROGRAMAR VISITAS PERIODICAS   
+        </button>
+    </div>
+</div>
     <div class="container-fluid mt-4">
         <div class="row">
     {% for c in cuadrillas %}
@@ -110,7 +116,7 @@
                                                         data-toggle="dropdown"
                                                     {% else %}
                                                         title="La visita está completada y facturada. No se pueden realizar cambios."
-                                                        style="cursor: help;"
+                                                        style="cursor: not-allowed;"
                                                     {% endif %}
                                                     data-boundary="window"
                                                     style="font-size: 0.65rem;">
@@ -197,11 +203,14 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="small font-weight-bold text-uppercase">Cliente</label>
-                    <select name="cliente_id" id="select_cliente" class="form-control select-cliente-trigger" required>
-                        <option value="">-- Seleccione Cliente --</option>
-                        {% for c in clientes %}
-                            <option value="{{ c.id }}">{{ c.nombre }}</option>
+                    <label class="small font-weight-bold text-uppercase text-muted">Cliente</label>
+                    <select name="cliente_id" 
+                            id="select_cliente_recurrencia" 
+                            class="form-control select-cliente-trigger" 
+                            style="width: 100%;" 
+                            required>
+                        <option value=""></option> {% for c in clientes %}
+                            <option value="{{ c.id }}">{{ c.nombre|upper }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -537,6 +546,20 @@
 
 {% block scripts %}
 <script>
+
+$(document).ready(function() {
+    $('#select_cliente_recurrencia').select2({
+        theme: 'bootstrap4', // Utiliza el tema de Bootstrap 4
+        placeholder: '-- SELECCIONE O BUSQUE UN CLIENTE --',
+        allowClear: true,
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "No se encontraron clientes";
+            }
+        }
+    });
+});
 
 function validarFechaNoLaboral(input) {
     const feriadosLista = JSON.parse('{{ feriados_json | safe }}' || '[]');
