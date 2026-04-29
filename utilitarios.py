@@ -1,6 +1,6 @@
-from datetime import timedelta
 from models import Feriado
 from collections import defaultdict
+from datetime import date, timedelta
 
 def agrupar_por_semana(visitas):
     """
@@ -50,3 +50,20 @@ def calcular_proximo_dia(fecha_base, dia_semana_objetivo):
         fecha_candidata += timedelta(days=1)
         
     return fecha_candidata
+
+def _next_monday_after(reference_date):
+    """Return the Monday of the week that starts AFTER reference_date's week."""
+    # Monday of reference week
+    monday_of_ref = reference_date - timedelta(days=reference_date.weekday())
+    return monday_of_ref + timedelta(weeks=1)
+ 
+ 
+def _week_label(monday):
+    """'05/05 – 10/05/2025'"""
+    saturday = monday + timedelta(days=5)
+    return f"{monday.strftime('%d/%m')}  –  {saturday.strftime('%d/%m/%Y')}"
+ 
+ 
+def _week_monday(any_date):
+    """Return the Monday of the week that contains any_date."""
+    return any_date - timedelta(days=any_date.weekday())
