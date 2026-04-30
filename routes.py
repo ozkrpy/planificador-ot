@@ -386,7 +386,118 @@ def init_routes(app):
                                 hoy=hoy,
                                 feriados_json=json.dumps(feriados_list))
 
-    from sqlalchemy.orm import joinedload
+
+   
+    @app.route('/generar-visitas-semana', methods=['POST'])
+    @login_required
+    def generar_visitas_semana():
+        today = date.today()
+
+        # ── Always generate the week AFTER the latest existing visita ────────────
+        ultima_visita = Visita.query.order_by(Visita.fecha.desc()).first()
+        if ultima_visita:
+            ref = ultima_visita.fecha
+        else:
+            ref = today
+
+        # Find that reference date's Monday, then jump one full week ahead
+        monday_of_ref = ref - timedelta(days=ref.weekday())
+        next_monday   = monday_of_ref + timedelta(weeks=1)
+        next_saturday = next_monday + timedelta(days=5)
+
+        # ── Feriados in that window ───────────────────────────────────────────────
+        feriados_en_semana = {
+            f.fecha for f in Feriado.query.filter(
+                Feriado.fecha >= next_monday,
+                Feriado.fecha <= next_saturday,
+                Feriado.no_laboral == True
+            ).all()
+        }
+
+        recurrencias = Recurrencia.query.filter_by(activo=True).all()
+        generadas = omitidas = bloqueadas = 0
+
+        for r in recurrencias:
+
+            # ── Build the exact list of (day_index) slots to generate ────────────
+            dias_a_generar = [r.dia_semana]
+
+            if r.frecuencia == 'SEMANAL_2X' and r.segundo_dia is not None:
+                segundo = int(r.segundo_dia)
+                # Only add it if it's a valid workday AND different from the main day
+                if 0 <= segundo <= 5 and segundo != r.dia_semana:
+                    dias_a_generar.append(segundo)
+                # If segundo_dia is invalid or same as main, log and skip silently
+                # (don't drop the whole rule, just the second slot)
+
+            for dia_idx in dias_a_generar:
+
+                # Validate range — skip without clamping so we don't corrupt dates
+                if not (0 <= dia_idx <= 5):
+                    omitidas += 1
+                    continue
+
+                target_date = next_monday + timedelta(days=dia_idx)
+
+                # Skip feriados
+                if target_date in feriados_en_semana:
+                    bloqueadas += 1
+                    continue
+
+                # Frequency gate — only on the MAIN day slot
+                if dia_idx == r.dia_semana:
+                    if r.frecuencia == 'QUINCENAL' and r.ultimo_generado:
+                        if (target_date - r.ultimo_generado).days < 14:
+                            omitidas += 1
+                            continue
+                    if r.frecuencia == 'MENSUAL' and r.ultimo_generado:
+                        if (target_date - r.ultimo_generado).days < 28:
+                            omitidas += 1
+                            continue
+
+                # Duplicate guard — exact recurrencia + date combo
+                ya_existe = Visita.query.filter_by(
+                    recurrencia_id=r.id,
+                    fecha=target_date
+                ).first()
+                if ya_existe:
+                    omitidas += 1
+                    continue
+
+                nueva = Visita(
+                    cliente_id     = r.cliente_id,
+                    ubicacion_id   = r.ubicacion_id,
+                    recurrencia_id = r.id,
+                    fecha          = target_date,
+                    hora           = r.hora_sugerida,
+                    hora_sugerida  = r.hora_sugerida,
+                    servicio       = r.servicio,
+                    estado         = 'PENDIENTE',
+                    cuadrilla      = r.cuadrilla_id,
+                )
+                db.session.add(nueva)
+                r.ultimo_generado = target_date
+                generadas += 1
+
+        db.session.commit()
+
+        semana_str = f"{next_monday.strftime('%d/%m')} – {next_saturday.strftime('%d/%m/%Y')}"
+
+        if generadas > 0:
+            flash(
+                f"✔ {generadas} visita(s) generadas para {semana_str}. "
+                f"{omitidas} omitida(s) · {bloqueadas} bloqueada(s) por feriado (se debe agendar manualmente).",
+                'success'
+            )
+        else:
+            flash(
+                f"No se generaron visitas nuevas para {semana_str}. "
+                f"{omitidas} ya existían o no correspondían · {bloqueadas} por feriado (se debe agendar manualmente).",
+                'warning'
+            )
+
+        return redirect(url_for('agendamientos'))
+
 
     @app.route('/operaciones/historico')
     @login_required
@@ -422,6 +533,7 @@ def init_routes(app):
 
         frecuencia = request.form.get('frecuencia')
         dia1 = int(request.form.get('dia_semana'))  
+        segundo_dia = request.form.get('segundo_dia')
 
         try:
             nueva_regla = Recurrencia(
@@ -432,6 +544,7 @@ def init_routes(app):
                 hora_sugerida=hora_obj,
                 servicio=servicio_elegido, 
                 frecuencia=frecuencia,
+                segundo_dia=int(segundo_dia) if segundo_dia else None,
                 activo=True
             )
             db.session.add(nueva_regla)

@@ -11,27 +11,39 @@
             <i class="fa-solid fa-calendar-check fa-2x"></i>
         </div>
     </div>
-<div class="bg-light-container d-flex justify-content-between align-items-center flex-wrap">
-    <div class="mb-2">
-        <a href="{{ url_for('historico_visitas') }}" class="btn btn-outline-dark btn-sm px-3 shadow-sm">
-            <i class="fa-solid fa-clock-rotate-left mr-1"></i> HISTÓRICO DE VISITAS ANTERIORES
-        </a>
+
+    <div class="bg-light-container d-flex justify-content-between align-items-center flex-wrap">
+        <div class="mb-2">
+            <a href="{{ url_for('historico_visitas') }}" class="btn btn-outline-dark btn-sm px-3 shadow-sm">
+                <i class="fa-solid fa-clock-rotate-left mr-1"></i> HISTÓRICO DE VISITAS ANTERIORES
+            </a>
+        </div>
+
+        <div class="btn-group mb-2">
+            <button class="btn btn-outline-secondary btn-sm px-3 mr-2"
+                    data-toggle="modal" data-target="#modalVisitaEsporadica">
+                <i class="fa-solid fa-bolt mr-1"></i> AGENDAR VISITA NO PLANEADA
+            </button>
+
+            <a href="{{ url_for('lista_recurrencias') }}"
+            class="btn btn-outline-info btn-sm px-3 mr-2">
+                <i class="fa-solid fa-gears mr-1"></i> CONFIG. AGENDAS DE CLIENTES
+            </a>
+
+            <button class="btn btn-dark-green btn-sm px-3 mr-2"
+                    data-toggle="modal" data-target="#modalNuevaRecurrencia">
+                <i class="fa-solid fa-plus-circle mr-1"></i> PROGRAMAR VISITAS PERIODICAS
+            </button>
+
+            {# ── GENERATOR BUTTON ──────────────────────────────────────────────────── #}
+            <button class="btn btn-sm px-3 font-weight-bold"
+                    style="background:#1a3d32; color:#fff; border:1px solid #162019;"
+                    data-toggle="modal" data-target="#modalGenerarSemana">
+                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> GENERAR SEMANA
+            </button>
+        </div>
     </div>
 
-    <div class="btn-group mb-2">
-        <button class="btn btn-outline-secondary btn-sm px-3 mr-2" data-toggle="modal" data-target="#modalVisitaEsporadica">
-            <i class="fa-solid fa-bolt mr-1"></i> AGENDAR VISITA NO PLANEADA
-        </button>
-        
-        <a href="{{ url_for('lista_recurrencias') }}" class="btn btn-outline-info btn-sm px-3 mr-2">
-            <i class="fa-solid fa-gears mr-1"></i> CONFIG. AGENDAS DE CLIENTES
-        </a>
-        
-        <button class="btn btn-dark-green btn-sm px-3" data-toggle="modal" data-target="#modalNuevaRecurrencia">
-            <i class="fa-solid fa-plus-circle mr-1"></i> PROGRAMAR VISITAS PERIODICAS   
-        </button>
-    </div>
-</div>
     <div class="container-fluid mt-4">
         <div class="row">
     {% for c in cuadrillas %}
@@ -542,6 +554,85 @@
         </form>
     </div>
 </div>
+
+<div class="modal fade" id="modalGenerarSemana" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+
+            <div class="modal-header" style="background:#1e2a24; border-bottom:1px solid #162019;">
+                <h5 class="modal-title font-weight-bold text-uppercase"
+                    style="color:#fff; font-size:0.82rem; letter-spacing:0.05em;">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>
+                    Generar Visitas — Próxima Semana
+                </h5>
+                <button type="button" class="close" data-dismiss="modal"
+                        style="color:#fff; opacity:0.7;">&times;</button>
+            </div>
+
+            <div class="modal-body">
+
+                {# ── Week range display (calculated in JS) ──────────────────── #}
+                <div class="alert alert-primary d-flex align-items-center mb-3 py-2"
+                     style="background:#eef7f3; border-color:#a8d5c2; color:#1a3d32;">
+                    <i class="fa-solid fa-calendar-week mr-2"></i>
+                    <span class="font-weight-bold x-small text-uppercase">
+                        Semana a generar:&nbsp;
+                    </span>
+                    <span class="font-weight-bold ml-1" id="semana_label" style="font-size:0.82rem;">
+                        —
+                    </span>
+                </div>
+
+                {# ── Summary of active rules ────────────────────────────────── #}
+                <p class="small text-muted mb-2">
+                    Esta acción creará visitas para <strong>todas las reglas activas</strong>
+                    según su frecuencia:
+                </p>
+
+                <ul class="list-unstyled x-small text-muted mb-3" style="line-height:1.9;">
+                    <li><i class="fa-solid fa-circle-check text-success mr-1"></i>
+                        <strong>SEMANAL</strong> — una visita en el día configurado.</li>
+                    <li><i class="fa-solid fa-circle-check text-success mr-1"></i>
+                        <strong>SEMANAL 2X</strong> — dos visitas (día principal + día secundario).</li>
+                    <li><i class="fa-solid fa-circle-check text-success mr-1"></i>
+                        <strong>QUINCENAL</strong> — solo si han pasado ≥ 14 días desde la última.</li>
+                    <li><i class="fa-solid fa-circle-check text-success mr-1"></i>
+                        <strong>MENSUAL</strong> — solo si han pasado ≥ 28 días desde la última.</li>
+                    <li><i class="fa-solid fa-circle-xmark text-danger mr-1"></i>
+                        Visitas ya existentes <strong>no</strong> se duplican.</li>
+                    <li><i class="fa-solid fa-circle-xmark text-danger mr-1"></i>
+                        Fechas marcadas como <strong>feriado</strong> son omitidas automáticamente.</li>
+                </ul>
+
+                <div class="alert alert-warning py-2 x-small mb-0"
+                     style="background:#fffbeb; border-color:#fbd38d; color:#744210;">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                    Esta operación no puede deshacerse directamente.
+                    Las visitas creadas podrán eliminarse una a una desde el panel.
+                </div>
+            </div>
+
+            <div class="modal-footer" style="background:#f8fafc; border-top:1px solid #e2e8f0;">
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        data-dismiss="modal">
+                    Cancelar
+                </button>
+
+                {# POST form — no JS redirect needed #}
+                <form action="{{ url_for('generar_visitas_semana') }}" method="POST" class="d-inline">
+                    <button type="submit"
+                            class="btn btn-sm font-weight-bold px-4"
+                            style="background:#2c6350; color:#fff; border:1px solid #22503f;">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>
+                        Confirmar y Generar
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -867,5 +958,20 @@ function toggleMetodoPago(selectElement) {
         metodoSelect.hide().attr('required', false);
     }
 }
+
+$('#modalGenerarSemana').on('show.bs.modal', function () {
+    const today = new Date();
+    // days until next Monday (if today is Mon, that's 7 days ahead)
+    const daysUntilMon = (7 - today.getDay() + 1) % 7 || 7;
+    const nextMon = new Date(today);
+    nextMon.setDate(today.getDate() + daysUntilMon);
+    const nextSat = new Date(nextMon);
+    nextSat.setDate(nextMon.getDate() + 5);
+
+    const fmt = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    const monStr = nextMon.toLocaleDateString('es-PY', fmt);
+    const satStr = nextSat.toLocaleDateString('es-PY', fmt);
+    document.getElementById('semana_label').textContent = `${monStr}  →  ${satStr}`;
+});
 </script>
 {% endblock %}
