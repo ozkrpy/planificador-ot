@@ -377,15 +377,50 @@ def init_routes(app):
 
         clientes = Cliente.query.order_by(Cliente.nombre).all()
         
-        # 5. Pasamos 'cuadrillas', 'visitas' y 'vehiculos' al template
-        return render_template('agendamientos.html', 
+        # # 5. Pasamos 'cuadrillas', 'visitas' y 'vehiculos' al template
+        # return render_template('agendamientos.html', 
+        #                         cuadrillas=cuadrillas,
+        #                         visitas=visitas,
+        #                         vehiculos=vehiculos,
+        #                         clientes=clientes,
+        #                         hoy=hoy,
+        #                         feriados_json=json.dumps(feriados_list))
+
+        semanas = defaultdict(lambda: defaultdict(list))
+        for v in visitas:
+            week_monday = v.fecha - timedelta(days=v.fecha.weekday())
+            semanas[week_monday][v.fecha].append(v)
+
+        # Sort weeks and days within each week
+        # semanas_ordenadas = {
+        #     wk: dict(sorted(dias.items()))
+        #     for wk, dias in sorted(semanas.items())
+        # }
+
+        # Replace semanas_ordenadas with a list of tuples that includes saturday
+        semanas_lista = [
+            (wk, wk + timedelta(days=5), dict(sorted(dias.items())))
+            for wk, dias in sorted(semanas.items())
+        ]
+
+        # for semana in semanas_lista:
+        #     print(f"Semana del {semana[0]} al {semana[1]}:")
+        #     for dia, visitas_dia in semana[2].items():
+        #         print(f"  Día {dia}")
+        #         for v in visitas_dia:
+        #             print(f"    Visita ID {v.id} - Cliente: {v.cliente.nombre if v.cliente else 'SIN CLIENTE'} - Servicio: {v.servicio} - Observación: {v.observaciones if v.observaciones   else 'Sin observación'}")
+
+        DIAS_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
+        return render_template('agendamientos.html',
                                 cuadrillas=cuadrillas,
-                                visitas=visitas,
+                                visitas=visitas,               # kept — modals/JS may use it
+                                semanas=semanas_lista,         # NEW
+                                dias_es=DIAS_ES,               # NEW
                                 vehiculos=vehiculos,
                                 clientes=clientes,
                                 hoy=hoy,
                                 feriados_json=json.dumps(feriados_list))
-
 
    
     @app.route('/generar-visitas-semana', methods=['POST'])
