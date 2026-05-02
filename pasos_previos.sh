@@ -116,3 +116,10 @@ Apply dev changes to staging	| git merge dev then FLASK_ENV=staging flask db upg
 Something went wrong, roll back	| flask db downgrade
 See current migration state	| flask db current
 See migration history	| flask db history
+
+
+                                                                                                              
+$env:FLASK_ENV="staging"; python.exe .\carga_masiva_clientes.py .\data-clientes.csv                                                                                              
+$env:FLASK_ENV="staging"; python.exe .\carga_masiva_proveedores.py .\data-proveedores.csv                                                                                        
+$env:FLASK_ENV="staging"; python.exe .\carga_masiva_feriados.py            
+
