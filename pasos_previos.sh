@@ -71,6 +71,25 @@ print("Actualización completada exitosamente.")
 # Salir del shell
 exit()
 
+
+Workflow from this point on
+First-time setup on a fresh environment:
+bashflask db migrate -m "initial schema"   # generates migration script from your models
+flask db upgrade                        # applies it → creates all tables
+Every time you add/change a model:
+bash# After editing models.py:
+flask db migrate -m "add column X to table Y"
+flask db upgrade
+On staging, after merging from dev:
+bashgit checkout staging
+git merge dev
+$env:FLASK_ENV="staging"; .\venv\Scripts\flask.exe db upgrade     # applies any new migrations to staging DB
+On production:
+bashgit checkout main
+git merge staging
+$env:FLASK_ENV="production"; .\venv\Scripts\flask.exe db upgrade  # same migration files, different DB
+
+
 # Daily dev work
 git checkout dev
 # ... make changes ...
@@ -112,7 +131,7 @@ Quick reference card
 Situation	| Command
 Fresh environment, first time	| flask db upgrade
 Added/changed a model	| flask db migrate -m "description" then flask db upgrade
-Apply dev changes to staging	| git merge dev then FLASK_ENV=staging flask db upgrade
+Apply dev changes to staging	| git merge dev then $env:FLASK_ENV="staging"; .\venv\Scripts\flask.exe db upgrade
 Something went wrong, roll back	| flask db downgrade
 See current migration state	| flask db current
 See migration history	| flask db history
