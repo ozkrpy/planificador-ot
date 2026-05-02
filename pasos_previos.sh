@@ -103,3 +103,16 @@ Nginx (reverse proxy, handles HTTPS)
        ↓
 PostgreSQL (replaces SQLite for production)
 
+
+# ejecutar en powershell para iniciar en staging:
+$env:FLASK_ENV="staging"; .\venv\Scripts\flask.exe 
+
+Quick reference card	
+	
+Situation	| Command
+Fresh environment, first time	| flask db upgrade
+Added/changed a model	| flask db migrate -m "description" then flask db upgrade
+Apply dev changes to staging	| git merge dev then FLASK_ENV=staging flask db upgrade
+Something went wrong, roll back	| flask db downgrade
+See current migration state	| flask db current
+See migration history	| flask db history

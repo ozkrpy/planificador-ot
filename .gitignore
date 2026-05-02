@@ -17,3 +17,5 @@ instance/
 bkp-*
 
 dummy.html
+
+inicializar_user.py
