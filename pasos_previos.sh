@@ -20,6 +20,9 @@ flask db upgrade
 # EN CASO QUE HAYA UN DESFASAJE Y NO HAGA FALTA HACER MIGRATE/UPGRADE
 flask db stamp head
 
+
+
+
 # CREAR UN USUARIO INICIAL EN LA BASE
 from app import app, db
 from models import User
@@ -67,3 +70,36 @@ print("Actualización completada exitosamente.")
 
 # Salir del shell
 exit()
+
+# Daily dev work
+git checkout dev
+# ... make changes ...
+git add . && git commit -m "feat: add route generation logic"
+git push origin dev
+
+# Ready to test in staging
+git checkout staging
+git merge dev
+git push origin staging
+# Test at localhost:5001 — if it looks good:
+
+# Ready for production
+git checkout main
+git merge staging
+git push origin main
+# Deploy from main
+
+$env:FLASK_ENV="staging"; .\venv\Scripts\flask.exe run --debug --port=5000 --host=0.0.0.0
+
+$env:FLASK_ENV="development"; .\venv\Scripts\flask.exe run --debug --port=6000 --host=0.0.0.0
+
+GitHub main branch
+       ↓  (git pull on server)
+Ubuntu VPS (DigitalOcean/Hetzner, ~$6/mo)
+       ↓
+Gunicorn (runs Flask as WSGI, not flask run)
+       ↓
+Nginx (reverse proxy, handles HTTPS)
+       ↓
+PostgreSQL (replaces SQLite for production)
+
