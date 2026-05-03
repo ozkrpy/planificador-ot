@@ -836,22 +836,25 @@ function copiarHojaRuta() {
 
     const items = document.querySelectorAll('#hojaRutaLista > div');
     items.forEach((item, i) => {
-        const cliente  = item.querySelector('.font-weight-bold.text-uppercase')?.textContent.trim() || '';
-        const addr     = item.querySelector('.x-small.text-muted')?.textContent.trim() || '';
-        const servicio = item.querySelectorAll('.x-small')[0]?.textContent.trim() || '';
-        const hora     = item.querySelectorAll('.x-small')[1]?.textContent.trim() || '';
+        const cliente     = item.querySelector('.font-weight-bold.text-uppercase')?.textContent.trim() || '';
+        const addr        = item.querySelector('.x-small.text-muted')?.textContent.trim() || '';
+        const servicio    = item.querySelectorAll('.x-small')[1]?.textContent.trim() || '';
+        const hora        = item.querySelectorAll('.x-small')[2]?.textContent.trim() || '';
+        const observacion = item.querySelectorAll('.x-small')[3]?.textContent.trim() || '';
+
         const mapsA    = item.querySelector('a');
         const maps     = mapsA ? mapsA.href : '';
 
         text += `${i+1}. *${cliente}*\n`;
-        if (addr)     text += `   📍 ${addr}\n`;
-        if (servicio) text += `   🔧 ${servicio}\n`;
-        if (hora)     text += `   🕐 ${hora}\n`;
-        if (maps)     text += `   🗺 ${maps}\n`;
+        if (addr)         text += `   📍 ${addr}\n`;
+        if (servicio)     text += `   🔧 ${servicio}\n`;
+        if (hora)         text += `   🕐 ${hora}\n`;
+        if (observacion)  text += `   💬 ${observacion}\n`;
+        if (maps)         text += `   🗺 ${maps}\n`;
         text += '\n';
     });
 
-    text += '_Generado desde OT Planning_';
+    text += '*_Generado desde OT Planning_*';
 
     navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('btnCopiarHoja');
