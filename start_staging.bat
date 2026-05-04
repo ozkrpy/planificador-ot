@@ -12,4 +12,4 @@ if errorlevel 1 (
 :: Configurar entorno y lanzar Flask
 set FLASK_ENV=staging
 call venv\Scripts\activate
-flask run --port=5004
+flask run --host=0.0.0.0 --port=5004
