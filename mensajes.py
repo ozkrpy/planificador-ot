@@ -18,7 +18,7 @@ TEXTOS = {
     "CLIENTES": "Clientes", 
     "AGENDAMIENTOS": "Agendamientos",
     "FACTURACION": "Facturación",
-    "PERSONAL": "Gestión de Personal",
+    "PERSONAL": "RRHH",
     "AJUSTES": "Ajustes",  
     "LOGOUT": "Cerrar Sesión",
     "SALIR": "Salir",
