@@ -874,7 +874,7 @@ def init_routes(app):
     @app.route('/facturacion')
     @login_required
     def facturacion():
-        filtro = request.args.get('filtro', 'pendientes')
+        filtro = request.args.get('filtro', 'todo')
         query = DetalleVisita.query.join(Visita)
         
         # --- APLICAR FILTROS ---
