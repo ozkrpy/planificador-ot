@@ -20,6 +20,9 @@ flask db upgrade
 # EN CASO QUE HAYA UN DESFASAJE Y NO HAGA FALTA HACER MIGRATE/UPGRADE
 flask db stamp head
 
+
+
+
 # CREAR UN USUARIO INICIAL EN LA BASE
 from app import app, db
 from models import User
@@ -67,3 +70,75 @@ print("Actualización completada exitosamente.")
 
 # Salir del shell
 exit()
+
+
+Workflow from this point on
+First-time setup on a fresh environment:
+bashflask db migrate -m "initial schema"   # generates migration script from your models
+flask db upgrade                        # applies it → creates all tables
+Every time you add/change a model:
+bash# After editing models.py:
+flask db migrate -m "add column X to table Y"
+flask db upgrade
+On staging, after merging from dev:
+bashgit checkout staging
+git merge dev
+$env:FLASK_ENV="staging"; .\venv\Scripts\flask.exe db upgrade     # applies any new migrations to staging DB
+On production:
+bashgit checkout main
+git merge staging
+$env:FLASK_ENV="production"; .\venv\Scripts\flask.exe db upgrade  # same migration files, different DB
+
+
+# Daily dev work
+git checkout dev
+# ... make changes ...
+git add . && git commit -m "feat: add route generation logic"
+git push origin dev
+
+# Ready to test in staging
+git checkout staging
+git merge dev
+git push origin staging
+# Test at localhost:5001 — if it looks good:
+
+# Ready for production
+git checkout main
+git merge staging
+git push origin main
+# Deploy from main
+
+$env:FLASK_ENV="staging"; .\venv\Scripts\flask.exe run --debug --port=5000 --host=0.0.0.0
+
+$env:FLASK_ENV="development"; .\venv\Scripts\flask.exe run --debug --port=6000 --host=0.0.0.0
+
+GitHub main branch
+       ↓  (git pull on server)
+Ubuntu VPS (DigitalOcean/Hetzner, ~$6/mo)
+       ↓
+Gunicorn (runs Flask as WSGI, not flask run)
+       ↓
+Nginx (reverse proxy, handles HTTPS)
+       ↓
+PostgreSQL (replaces SQLite for production)
+
+
+# ejecutar en powershell para iniciar en staging:
+$env:FLASK_ENV="staging"; .\venv\Scripts\flask.exe 
+
+Quick reference card	
+	
+Situation	| Command
+Fresh environment, first time	| flask db upgrade
+Added/changed a model	| flask db migrate -m "description" then flask db upgrade
+Apply dev changes to staging	| git merge dev then $env:FLASK_ENV="staging"; .\venv\Scripts\flask.exe db upgrade
+Something went wrong, roll back	| flask db downgrade
+See current migration state	| flask db current
+See migration history	| flask db history
+
+
+                                                                                                              
+$env:FLASK_ENV="staging"; python.exe .\carga_masiva_clientes.py .\data-clientes.csv                                                                                              
+$env:FLASK_ENV="staging"; python.exe .\carga_masiva_proveedores.py .\data-proveedores.csv                                                                                        
+$env:FLASK_ENV="staging"; python.exe .\carga_masiva_feriados.py            
+

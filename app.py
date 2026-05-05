@@ -1,13 +1,19 @@
 from flask import Flask
 from flask_migrate import Migrate
 from flask_login import LoginManager
-from parametros import Config
+from parametros import config
 from models import db, User
 from routes import init_routes
 from mensajes import TEXTOS
+import os
+from dotenv import load_dotenv
+
+env_file = f".env.{os.environ.get('FLASK_ENV', 'dev')}"
+load_dotenv(env_file)
 
 app = Flask(__name__)
-app.config.from_object(Config)
+env = os.environ.get('FLASK_ENV', 'development')
+app.config.from_object(config[env])
 
 @app.template_filter('number_format')
 def number_format(value):

@@ -373,13 +373,25 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="small font-weight-bold text-uppercase">Cliente</label>
-                    <select name="cliente_id" id="select_cliente_esp" class="form-control select-cliente-trigger" required>
+                    <!-- <select name="cliente_id" id="select_cliente_esp" class="form-control select-cliente-trigger" required>
                         <option value="">-- Seleccione Cliente --</option>
                         {% for c in clientes %}
                             <option value="{{ c.id }}">{{ c.nombre }}</option>
                         {% endfor %}
+                    </select> -->
+                    <select name="cliente_id" 
+                            id="select_cliente_esporadico" 
+                            class="form-control select-cliente-trigger" 
+                            style="width: 100%;" 
+                            required>
+                        <option value=""></option> {% for c in clientes %}
+                            <option value="{{ c.id }}">{{ c.nombre|upper }}</option>
+                        {% endfor %}
                     </select>
                 </div>
+
+                    
+
                 <div class="form-group">
                     <label class="small font-weight-bold text-uppercase">Ubicación</label>
                     <select name="ubicacion_id" id="select_ubicacion_esp" class="form-control" required disabled>
@@ -724,7 +736,9 @@
 {% endblock %}
 
 {% block scripts %}
+{{  super() }}
 <script>
+
 
 // Visita detail map built from Jinja — populated once on page load
 const VISITAS_DETAIL = {};
@@ -822,22 +836,25 @@ function copiarHojaRuta() {
 
     const items = document.querySelectorAll('#hojaRutaLista > div');
     items.forEach((item, i) => {
-        const cliente  = item.querySelector('.font-weight-bold.text-uppercase')?.textContent.trim() || '';
-        const addr     = item.querySelector('.x-small.text-muted')?.textContent.trim() || '';
-        const servicio = item.querySelectorAll('.x-small')[0]?.textContent.trim() || '';
-        const hora     = item.querySelectorAll('.x-small')[1]?.textContent.trim() || '';
+        const cliente     = item.querySelector('.font-weight-bold.text-uppercase')?.textContent.trim() || '';
+        const addr        = item.querySelector('.x-small.text-muted')?.textContent.trim() || '';
+        const servicio    = item.querySelectorAll('.x-small')[1]?.textContent.trim() || '';
+        const hora        = item.querySelectorAll('.x-small')[2]?.textContent.trim() || '';
+        const observacion = item.querySelectorAll('.x-small')[3]?.textContent.trim() || '';
+
         const mapsA    = item.querySelector('a');
         const maps     = mapsA ? mapsA.href : '';
 
         text += `${i+1}. *${cliente}*\n`;
-        if (addr)     text += `   📍 ${addr}\n`;
-        if (servicio) text += `   🔧 ${servicio}\n`;
-        if (hora)     text += `   🕐 ${hora}\n`;
-        if (maps)     text += `   🗺 ${maps}\n`;
+        if (addr)         text += `   📍 ${addr}\n`;
+        if (servicio)     text += `   🔧 ${servicio}\n`;
+        if (hora)         text += `   🕐 ${hora}\n`;
+        if (observacion)  text += `   💬 ${observacion}\n`;
+        if (maps)         text += `   🗺 ${maps}\n`;
         text += '\n';
     });
 
-    text += '_Generado desde OT Planning_';
+    text += '*_Generado desde OT Planning_*';
 
     navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('btnCopiarHoja');
@@ -849,16 +866,48 @@ function copiarHojaRuta() {
 }
 
 $(document).ready(function() {
-    $('#select_cliente_recurrencia').select2({
-        theme: 'bootstrap4', // Utiliza el tema de Bootstrap 4
+    const $select = $('#select_cliente_recurrencia');
+
+    $select.select2({
+        theme: 'bootstrap4',
         placeholder: '-- SELECCIONE O BUSQUE UN CLIENTE --',
         allowClear: true,
-        width: '100%',
-        language: {
-            noResults: function() {
-                return "No se encontraron clientes";
-            }
-        }
+        width: '100%'
+    });
+
+    // Escuchador específico para Select2
+    $select.on('select2:select', function(e) {
+        // Disparamos manualmente un evento 'change' nativo para que tu 
+        // otro script (el document.addEventListener) lo detecte.
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    // También manejar cuando se limpia el campo (allowClear)
+    $select.on('select2:unselect', function(e) {
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+});
+
+$(document).ready(function() {
+    const $select = $('#select_cliente_esporadico');
+
+    $select.select2({
+        theme: 'bootstrap4',
+        placeholder: '-- SELECCIONE O BUSQUE UN CLIENTE --',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Escuchador específico para Select2
+    $select.on('select2:select', function(e) {
+        // Disparamos manualmente un evento 'change' nativo para que tu 
+        // otro script (el document.addEventListener) lo detecte.
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    // También manejar cuando se limpia el campo (allowClear)
+    $select.on('select2:unselect', function(e) {
+        this.dispatchEvent(new Event('change', { bubbles: true }));
     });
 });
 
@@ -1042,25 +1091,6 @@ function prepararReagendar(id, cliente, fecha, cuadrilla, servicio, hora) {
 }
 
 
-//document.getElementsByName('dia_semana')[0].addEventListener('change', function() {
-//    const dia1 = parseInt(this.value);
-//    const select2 = document.getElementById('select_segundo_dia');
-//    const diasLabel = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-//    
-//    select2.innerHTML = '';
-//    // Regla: día1 + 3 (para que haya 2 días libres en el medio)
-//    // Ejemplo: Lunes(0) + 3 = Jueves(3). 
-//    for (let i = dia1 + 3; i <= 5; i++) {
-//        let opt = document.createElement('option');
-//        opt.value = i;
-//        opt.innerHTML = diasLabel[i];
-//        select2.appendChild(opt);
-//    }
-//    
-//    if (select2.options.length === 0) {
-//        select2.innerHTML = '<option>No hay días hábiles suficientes</option>';
-//    }
-//});
 
 $('.btn-reagendar').on('click', function() {
     const d = $(this).data();

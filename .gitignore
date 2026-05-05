@@ -2,8 +2,8 @@
 venv/
 env/
 __pycache__/
-migrations/
 *.pyc
+.env*
 
 # Base de datos local
 instance/
@@ -17,3 +17,7 @@ instance/
 bkp-*
 
 dummy.html
+
+inicializar_user.py
+
+*.bat

@@ -1,15 +1,8 @@
 import os
 
-BASEDIR = os.path.abspath(os.path.dirname(__file__))
-
-# class Config:
-#     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASEDIR, 'data.db')
-#     SQLALCHEMY_TRACK_MODIFICATIONS = False
-#     SECRET_KEY = 'dev-key-placeholder' # Required for forms later
-
 class Config:
     """Shared base — never instantiated directly."""
-    SECRET_KEY          = os.environ.get('SECRET_KEY', 'dev-key-placeholder')
+    SECRET_KEY          = os.environ.get('SECRET_KEY', 'changeme')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_ENABLED    = True
 
@@ -39,7 +32,6 @@ class ProductionConfig(Config):
     )
     SESSION_COOKIE_SECURE   = True
     SESSION_COOKIE_HTTPONLY = True
-    PREFERRED_URL_SCHEME = 'https'
 
 config = {
     'development': DevelopmentConfig,
