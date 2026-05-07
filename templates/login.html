@@ -1,31 +1,39 @@
 {% extends "base.html" %}
 
 {% block main %}
-<div class="row justify-content-center mt-5"> 
-    <div class="col-md-6">
-        <div class="row justify-content-center">
-            <div class="col-md-4">
-                <div class="card shadow">
-                    <div class="card-body">
-                        <h3 class="text-center">{{ txt.TITULO_APP }}</h3>
-                        <hr>
-                        <form action="" method="post" novalidate>
-                            {{ form.hidden_tag() }}
-                            <div class="form-group">
-                                {{ form.username.label(class="form-control-label") }}
-                                {{ form.username(class="form-control", size=32) }}
-                            </div>
-                            <div class="form-group">
-                                {{ form.password.label(class="form-control-label") }}
-                                {{ form.password(class="form-control", size=32) }}
-                            </div>
-                            <div class="form-check mb-3">
-                                {{ form.remember_me(class="form-check-input") }}
-                                {{ form.remember_me.label(class="form-check-label") }}
-                            </div>
-                            {{ form.submit(class="btn btn-primary btn-block") }}
-                        </form>
-                    </div>
+<div class="container">
+    <div class="row justify-content-center align-items-center vh-100">
+        <div class="col-11 col-sm-8 col-md-6 col-lg-4 col-xl-3">
+            <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                <div class="card-body p-4">
+                    <h3 class="text-center mb-4 font-weight-bold text-dark" 
+                        style="letter-spacing: 1px; font-size: 1.6rem; line-height: 1.2; text-transform: uppercase;">
+                        {{ txt.TITULO_APP }}
+                    </h3>
+                    <hr class="mb-4">
+                    
+                    <form action="" method="post" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="form-group mb-3">
+                            {{ form.username.label(class="small font-weight-bold text-muted mb-1", style="text-transform: uppercase;") }}
+                            {{ form.username(class="form-control form-control-lg bg-light border-0", placeholder="Usuario") }}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            {{ form.password.label(class="small font-weight-bold text-muted mb-1", style="text-transform: uppercase;") }}
+                            {{ form.password(class="form-control form-control-lg bg-light border-0", placeholder="Contraseña") }}
+                        </div>
+                        
+                        <div class="form-check mb-4 d-flex align-items-center">
+                            {{ form.remember_me(class="form-check-input mt-0") }}
+                            {{ form.remember_me.label(class="form-check-label small font-weight-bold text-muted ms-2", style="text-transform: uppercase; margin-left: 8px;") }}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.submit(class="btn btn-block btn-lg text-white font-weight-bold w-100", style="background-color: #2d5a4c; border-radius: 8px;") }}
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
