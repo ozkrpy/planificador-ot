@@ -2,12 +2,23 @@
 
 {% block main %}
 <div class="container">
-    <div class="row justify-content-center align-items-center vh-100">
+    <div class="row justify-content-center align-items-center mt-5 mb-5">
         <div class="col-11 col-sm-8 col-md-6 col-lg-4 col-xl-3">
-            <div class="card shadow-sm border-0" style="border-radius: 12px;">
-                <div class="card-body p-4">
-                    <h3 class="text-center mb-4 font-weight-bold text-dark" 
-                        style="letter-spacing: 1px; font-size: 1.6rem; line-height: 1.2; text-transform: uppercase;">
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-warning shadow-sm border-0 py-2 mb-3" style="border-radius: 8px;">
+                    <small class="font-weight-bold"><i class="fa-solid fa-circle-exclamation mr-2"></i>{{ message }}</small>
+                </div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <div class="card shadow-sm border-0" style="border-radius: 15px;">
+                <div class="card-body p-4 sm-5">
+                    <h3 class="text-center mb-1 font-weight-bold text-dark" 
+                        style="letter-spacing: 1px; font-size: 1.4rem; line-height: 1.2; text-transform: uppercase;">
                         {{ txt.TITULO_APP }}
                     </h3>
                     <hr class="mb-4">
@@ -35,6 +46,9 @@
                         </div>
                     </form>
                 </div>
+            </div>
+            <div class="text-center mt-4 text-muted">
+                <small>Ver. 2.0 | Asunción, PY</small>
             </div>
         </div>
     </div>

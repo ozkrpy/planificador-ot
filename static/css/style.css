@@ -537,3 +537,24 @@ tr[style*="background-color: #14212f"] { background-color: var(--gray-900) !impo
     color: #495057;
     font-weight: 500; /* Texto un poco más marcado */
 }
+
+/* Contenedor principal que ocupa toda la pantalla */
+.login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center; /* Centra verticalmente cuando hay espacio */
+    justify-content: center;
+    padding: 20px; /* Espacio mínimo en los bordes */
+}
+
+/* Ajuste específico para cuando el teclado está activo en móviles */
+@media (max-height: 500px) {
+    .login-wrapper {
+        align-items: flex-start; /* Empuja la tarjeta al tope si el espacio es poco */
+        padding-top: 10px;
+    }
+    
+    .login-card-header {
+        display: none; /* Opcional: oculta logos/títulos grandes para ganar espacio */
+    }
+}

@@ -87,15 +87,17 @@
         </div>
         <br>
         <div>
-            {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                <div class="alert alert-primary">
-                {{ message }}
-                </div>
-                {% endfor %}
+            {% if request.endpoint != 'login' %} 
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-primary">
+                        {{ message }}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
             {% endif %}
-            {% endwith %}
         </div>
         <div>
             {% block main %}{% endblock %}
