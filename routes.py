@@ -108,7 +108,31 @@ def init_routes(app):
     @app.route('/')
     @login_required
     def index():
-        return render_template('index.html')
+        # --- Datos para KPIs ---
+        # Contamos visitas agendadas para hoy
+        hoy = datetime.now().date()
+        visitas_hoy = Visita.query.filter_by(fecha=hoy).count()
+        
+        equipos = ConfiguracionCuadrilla.query.count()
+        
+        agenda_hoy = Visita.query.filter_by(fecha=hoy).order_by(Visita.hora).all()
+        # for v in agenda_hoy:
+        #     print(f"Visita ID {v.id} cuadrilla { v.config_cuadrilla.nombre_cuadrilla }")
+        
+        # --- Datos para el Gráfico (Chart.js) ---
+        pendientes = db.session.query(db.func.sum(DetalleVisita.total)).filter(DetalleVisita.estado_pago == 'PENDIENTE').scalar() or 0
+        pagado = db.session.query(db.func.sum(DetalleVisita.total)).filter(DetalleVisita.estado_pago == 'PAGADO').scalar() or 0
+        datos_grafico = [float(pagado), float(pendientes)]
+        print(DetalleVisita.query.all())
+
+        return render_template('index.html', 
+                            txt=TEXTOS, 
+                            datetime=datetime,
+                            visitas_hoy=visitas_hoy,
+                            pendientes_cobro=f"{pendientes:,.0f}",
+                            equipos_activos=equipos,
+                            agenda=agenda_hoy,
+                            datos_grafico=datos_grafico)
     
 # CLIENTES MODULE
     @app.route('/clientes')
@@ -298,131 +322,58 @@ def init_routes(app):
 
 
 # AGENDAMIENTOS MODULE
-    # @app.route('/agendamientos')
-    # @login_required
-    # def agendamientos():
-
-    #     from datetime import date, timedelta
-    #     hoy = date.today()
-    #     fin_semana = hoy + timedelta(days=7) # Definimos el rango de 7 días
-        
-    #     feriados = Feriado.query.all()
-    #     # Creamos una lista de strings 'YYYY-MM-DD'
-    #     feriados_list = [f.fecha.strftime('%Y-%m-%d') for f in feriados if f.no_laboral]
-
-    #     # 1. Traer visitas de Cuadrilla 1 (desde hoy en adelante)
-    #     query_c1 = Visita.query.filter(
-    #         Visita.cuadrilla == '1',
-    #         Visita.fecha >= hoy,
-    #         Visita.estado != 'CANCELADO'
-    #     ).order_by(Visita.fecha.asc())
-
-    #     # 2. Traer visitas de Cuadrilla 2 (desde hoy en adelante)
-    #     query_c2 = Visita.query.filter(
-    #         Visita.cuadrilla == '2',
-    #         Visita.fecha >= hoy,
-    #         Visita.estado != 'CANCELADO'
-    #     ).order_by(Visita.fecha.asc())
-
-    #     # 3. Aplicar la agrupación
-    #     semanas_c1 = agrupar_por_semana(query_c1.all())
-    #     semanas_c2 = agrupar_por_semana(query_c2.all())
-
-
-    #     # Filtramos visitas en el rango de fechas y ordenamos por fecha
-    #     # visitas_c1 = Visita.query.filter(
-    #     #     Visita.fecha >= hoy, 
-    #     #     Visita.fecha <= fin_semana, 
-    #     #     Visita.cuadrilla == 1
-    #     # ).order_by(Visita.fecha.asc()).all()
-        
-    #     # visitas_c2 = Visita.query.filter(
-    #     #     Visita.fecha >= hoy, 
-    #     #     Visita.fecha <= fin_semana, 
-    #     #     Visita.cuadrilla == 2
-    #     # ).order_by(Visita.fecha.asc()).all()
-        
-    #     clientes = Cliente.query.order_by(Cliente.nombre).all()
-        
-    #     return render_template('agendamientos.html', 
-    #                         semanas_c1=semanas_c1, 
-    #                         semanas_c2=semanas_c2, 
-    #                         clientes=clientes,
-    #                         hoy=hoy,
-        #                         feriados_json=json.dumps(feriados_list))
     @app.route('/agendamientos')
     @login_required
     def agendamientos():
         from datetime import date, timedelta
         import json
+        from collections import defaultdict  # <--- IMPORTANTE: Faltaba esto
 
         hoy = date.today()
         
-        # 1. Traer todas las cuadrillas configuradas (La tabla maestra)
+        # 1. Datos Maestros
         cuadrillas = ConfiguracionCuadrilla.query.all()
-        
-        # 2. Traer todos los vehículos (para los selects de los formularios)
         vehiculos = Vehiculo.query.all()
+        clientes = Cliente.query.order_by(Cliente.nombre).all()
 
-        # 3. Traer TODAS las visitas activas desde hoy
-        # Nota: Ya no filtramos por cuadrilla '1' o '2' manualmente aquí
+        # 2. Visitas (Nota: Asegúrate que la migración de cuadrilla_id se aplicó)
         visitas = Visita.query.filter(
             Visita.fecha >= hoy,
             Visita.estado != 'CANCELADO'
         ).order_by(Visita.fecha.asc()).all()
 
-        # 4. Feriados para el calendario
+        # 3. Feriados (Asunción, PY)
         feriados = Feriado.query.all()
         feriados_list = [f.fecha.strftime('%Y-%m-%d') for f in feriados if f.no_laboral]
 
-        clientes = Cliente.query.order_by(Cliente.nombre).all()
-        
-        # # 5. Pasamos 'cuadrillas', 'visitas' y 'vehiculos' al template
-        # return render_template('agendamientos.html', 
-        #                         cuadrillas=cuadrillas,
-        #                         visitas=visitas,
-        #                         vehiculos=vehiculos,
-        #                         clientes=clientes,
-        #                         hoy=hoy,
-        #                         feriados_json=json.dumps(feriados_list))
-
+        # 4. Lógica de Agrupación por Semanas
+        # Usamos defaultdict para no tener errores de llave no encontrada
         semanas = defaultdict(lambda: defaultdict(list))
+        
         for v in visitas:
+            # Calculamos el lunes de esa semana
             week_monday = v.fecha - timedelta(days=v.fecha.weekday())
             semanas[week_monday][v.fecha].append(v)
 
-        # Sort weeks and days within each week
-        # semanas_ordenadas = {
-        #     wk: dict(sorted(dias.items()))
-        #     for wk, dias in sorted(semanas.items())
-        # }
-
-        # Replace semanas_ordenadas with a list of tuples that includes saturday
+        # 5. Transformación a lista ordenada para el Template
+        # Retorna: (Inicio_Semana, Fin_Semana, {Fecha: [Visitas]})
         semanas_lista = [
             (wk, wk + timedelta(days=5), dict(sorted(dias.items())))
             for wk, dias in sorted(semanas.items())
         ]
 
-        # for semana in semanas_lista:
-        #     print(f"Semana del {semana[0]} al {semana[1]}:")
-        #     for dia, visitas_dia in semana[2].items():
-        #         print(f"  Día {dia}")
-        #         for v in visitas_dia:
-        #             print(f"    Visita ID {v.id} - Cliente: {v.cliente.nombre if v.cliente else 'SIN CLIENTE'} - Servicio: {v.servicio} - Observación: {v.observaciones if v.observaciones   else 'Sin observación'}")
-
         DIAS_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
         return render_template('agendamientos.html',
                                 cuadrillas=cuadrillas,
-                                visitas=visitas,               # kept — modals/JS may use it
-                                semanas=semanas_lista,         # NEW
-                                dias_es=DIAS_ES,               # NEW
+                                visitas=visitas,
+                                semanas=semanas_lista,
+                                dias_es=DIAS_ES,
                                 vehiculos=vehiculos,
                                 clientes=clientes,
                                 hoy=hoy,
                                 feriados_json=json.dumps(feriados_list))
 
-   
     @app.route('/generar-visitas-semana', methods=['POST'])
     @login_required
     def generar_visitas_semana():
@@ -508,7 +459,7 @@ def init_routes(app):
                     hora_sugerida  = r.hora_sugerida,
                     servicio       = r.servicio,
                     estado         = 'PENDIENTE',
-                    cuadrilla      = r.cuadrilla_id,
+                    cuadrilla_id   = r.cuadrilla_id,
                 )
                 db.session.add(nueva)
                 r.ultimo_generado = target_date
@@ -551,7 +502,9 @@ def init_routes(app):
                 agrupados[cliente_nom] = []
             agrupados[cliente_nom].append(v)
 
-        return render_template('agendamientos_historico.html', agrupados=agrupados)
+        cuadrillas = ConfiguracionCuadrilla.query.all()
+
+        return render_template('agendamientos_historico.html', agrupados=agrupados, cuadrillas=cuadrillas)
 
     @app.route('/crear-recurrencia', methods=['POST'])
     @login_required
@@ -594,7 +547,7 @@ def init_routes(app):
             nueva_visita1 = Visita(
                 cliente_id=cliente_id,
                 ubicacion_id=ubicacion_id,
-                cuadrilla=cuadrilla_id,
+                cuadrilla_id=cuadrilla_id,
                 fecha=proxima_fecha,
                 hora_sugerida=hora_obj,
                 servicio=servicio_elegido, # La visita hereda el servicio específico
@@ -615,7 +568,7 @@ def init_routes(app):
                 nueva_visita2 = Visita(
                     cliente_id=cliente_id,
                     ubicacion_id=ubicacion_id,
-                    cuadrilla=cuadrilla_id,
+                    cuadrilla_id=cuadrilla_id,
                     fecha=fecha_v2,
                     hora_sugerida=hora_obj,
                     servicio=servicio_elegido, # La visita hereda el servicio específico
@@ -697,9 +650,10 @@ def init_routes(app):
             nueva_visita = Visita(
                 cliente_id=cliente_id,
                 ubicacion_id=ubicacion_id,
-                cuadrilla=cuadrilla_id,
+                cuadrilla_id=cuadrilla_id,
                 vehiculo_id=v_id, # Asignación automática
                 fecha=fecha_obj,
+                hora=hora_obj,
                 hora_sugerida=hora_obj,
                 servicio=servicio,
                 observaciones=obs_str,
@@ -724,7 +678,7 @@ def init_routes(app):
         try:
             # Actualizamos los campos con los nuevos datos del modal
             visita.fecha = date.fromisoformat(request.form.get('fecha'))
-            visita.cuadrilla = request.form.get('cuadrilla_id')
+            visita.cuadrilla_id = request.form.get('cuadrilla_id')
             visita.servicio = request.form.get('servicio').upper()
             visita.observaciones = request.form.get('observaciones')
 
@@ -932,25 +886,6 @@ def init_routes(app):
                             agrupados_por_cliente=agrupados, 
                             total_deuda_global=total_deuda_global,
                             total_cobrado_periodo=total_cobrado_periodo)
-
-#     @app.route('/facturacion/actualizar-pago/<int:id>', methods=['POST'])
-#     @login_required
-#     def actualizar_pago_item(id):
-#         detalle = DetalleVisita.query.get_or_404(id)
-#         data = request.get_json()
-#         nuevo_estado = data.get('estado')
-        
-#         detalle.estado_pago = nuevo_estado
-#         detalle.metodo_pago = data.get('metodo')
-        
-#         # Si el nuevo estado es PAGADO, guardamos la fecha de finalización
-#         if nuevo_estado == 'PAGADO':
-#             detalle.date_finished = datetime.now()
-#         else:
-#             detalle.date_finished = None # Por si se revierte a PENDIENTE
-            
-#         db.session.commit()
-#         return jsonify({"status": "success"})   
 
 # RRHH MODULE
     @app.route('/gestion/personal')

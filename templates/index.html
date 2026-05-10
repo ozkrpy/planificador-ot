@@ -1,34 +1,198 @@
 {% extends "base.html" %}
 
 {% block main %}
-<div class="container-fluid">
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="h4 font-weight-bold text-dark-green mb-0 text-uppercase">DASHBOARD: HOLA {{ current_user.username | upper }} </h2>
+            <p class="header-subtitle mb-0 text-uppercase">Explora las tareas, visitas del dia, equipos y mas.</p>
+        </div>
+        <div class="text-right d-none d-md-block">
+            <div class="badge badge-dark p-2 shadow-sm">
+                <i class="fa-regular fa-clock fa-2x opacity-50"> {{ datetime.now().strftime('%H:%M') }}</i>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
-        <div class="col-md-5 col-lg-4"> 
-            <div class="card shadow-sm mb-4">
-                <div class="card-header">
-                    {{ txt.HOME }}
+        <div class="col-xl-2 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #2d5a4c !important;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Visitas para Hoy</div>
+                            <div class="h4 mb-0 font-weight-bold text-dark">{{ visitas_hoy }}</div>
+                        </div>
+                        <div class="col-auto text-dark">
+                            <i class="fas fa-calendar-day fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #c81c1c !important;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Por Cobrar (Gs.)</div>
+                            <div class="h4 mb-0 font-weight-bold text-dark">{{ pendientes_cobro }}</div>
+                        </div>
+                        <div class="col-auto text-dark">
+                            <i class="fas fa-file-invoice-dollar fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #36b9cc !important;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Cuadrillas activas</div>
+                            <div class="h4 mb-0 font-weight-bold text-dark">{{ equipos_activos }}</div>
+                        </div>
+                        <div class="col-auto text-dark">
+                            <i class="fas fa-truck-fast fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- div filler -->
+        <div class="col-xl-2 col-md-6 mb-4"></div>
+
+        <div class="col-xl-2 col-md-6 mb-4">
+            <a href="{{ url_for('clientes_nuevo') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 py-2 bg-gradient-dark text-white">
+                    <div class="card-body d-flex align-items-center justify-content-around">
+                        <i class="fas fa-user-plus fa-2x opacity-50"></i>
+                        <span class="font-weight-bold">NUEVO CLIENTE</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-xl-2 col-md-6 mb-4">
+            <a href="{{ url_for('agendamientos') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 py-2 bg-gradient-dark text-white">
+                    <div class="card-body d-flex align-items-center justify-content-around">
+                        <!-- <i class="fas fa-user-plus fa-2x opacity-50"></i> -->
+                        <i class="fa-regular fa-calendar-plus fa-2x opacity-50"></i>
+                        <span class="font-weight-bold">AGENDAR VISITA</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-dark"><i class="fa-solid fa-list-check mr-2"></i>Agenda del Día</h6>
+                    <a href="{{ url_for('agendamientos') }}" class="btn btn-sm btn-light border">Ver Calendario</a>
                 </div>
                 <div class="card-body">
-                    <h5 class="text-secondary">Welcome, {{ current_user.username }}</h5>
-                    <p class="text-muted small">System status and overview.</p>
-                    
-                    <div class="card border-left-primary shadow-sm h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-muted text-uppercase mb-1">
-                                        Status</div>
-                                    <div class="h6 mb-0 font-weight-bold text-dark">Database Active</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fa fa-database fa-lg text-secondary"></i>
-                                </div>
-                            </div>
-                        </div>
+                    {% if agenda %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="x-small text-uppercase text-muted bg-light">
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Cliente / Servicio</th>
+                                    <th>Equipo</th>
+                                    <th class="text-right">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in agenda %}
+                                <tr>
+                                    <td class="font-weight-bold text-primary">{{ item.hora_sugerida }}</td>
+                                    <td>
+                                        <div class="text-dark font-weight-bold mb-0">{{ item.cliente.nombre }}</div>
+                                        <small class="text-muted">{{ item.servicio }}</small>
+                                    </td>
+                                    <td><span class="badge badge-light border">{{ item.config_cuadrilla.nombre_cuadrilla }}</span></td>
+                                    <td class="text-right">
+                                        <button class="btn btn-sm btn-outline-dark"><i class="fa-solid fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-calendar-xmark fa-3x text-light mb-3"></i>
+                        <p class="text-muted">No hay visitas programadas para hoy.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-dark">Pendientes y Cobrados</h6>
+                </div>
+                <div class="card-body">
+                    <div style="height: 250px;">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between small px-3">
+                        <span><i class="fas fa-circle text-success mr-1"></i> Cobrado</span>
+                        <span><i class="fas fa-circle text-warning mr-1"></i> Pendiente</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm bg-gradient-dark text-white p-3">
+                <div class="d-flex align-items-center">
+                    <div class="mr-3">
+                        <i class="fa-solid fa-users-gear fa-2x opacity-25"></i>
+                    </div>
+                    <div>
+                        <div class="small opacity-75">Personal en Equipo</div>
+                        <a href="{{ url_for('gestion_personal') }}" class="text-white font-weight-bold">
+                            Gestionar RRHH <i class="fas fa-arrow-right ml-1"></i></a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Inicialización del gráfico circular (Donut)
+    document.addEventListener('DOMContentLoaded', function() {
+        var ctx = document.getElementById('financeChart').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Cobrado', 'Pendiente'],
+                datasets: [{
+                    data: {{ datos_grafico | tojson }},
+                    backgroundColor: ['#2d5a4c', '#fbd38d'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                cutoutPercentage: 80,
+                legend: { display: false },
+                animation: { animateScale: true }
+            }
+        });
+    });
+</script>
 {% endblock %}

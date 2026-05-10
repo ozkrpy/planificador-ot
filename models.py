@@ -129,7 +129,8 @@ class Visita(db.Model):
     __tablename__ = 'visitas'
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'))
-    cuadrilla = db.Column(db.Integer) # Crew 1 o 2
+    # cuadrilla = db.Column(db.Integer) # Crew 1 o 2
+    cuadrilla_id = db.Column(db.Integer, db.ForeignKey('configuracion_cuadrilla.id'))
     fecha = db.Column(db.Date, nullable=False)
     hora = db.Column(db.Time)
     estado = db.Column(db.String(20), default='PENDIENTE') 
@@ -150,6 +151,7 @@ class Visita(db.Model):
     recurrencia = db.relationship('Recurrencia', backref='instancias_visita')
     detalles = db.relationship('DetalleVisita', backref='visita', lazy=True, cascade="all, delete-orphan")
     vehiculo = db.relationship('Vehiculo', backref='visitas')
+    config_cuadrilla = db.relationship('ConfiguracionCuadrilla', backref='visitas_asignadas')
 
 class DetalleVisita(db.Model):
     id = db.Column(db.Integer, primary_key=True)

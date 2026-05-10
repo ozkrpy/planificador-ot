@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
         <div>
             <h2 class="h4 font-weight-bold text-dark-green mb-0 text-uppercase">Histórico Global de Visitas</h2>
-            <p class="header-subtitle mb-0 text-uppercase">Registro de servicios y estados de pago por cliente</p>
+            <p class="header-subtitle mb-0 text-uppercase">Registro de servicios y estados de pago por cliente.</p>
         </div>
         <a href="{{ url_for('agendamientos') }}" class="btn btn-sm btn-light border">
             <i class="fa-solid fa-arrow-left mr-1"></i> Volver al calendario de agendamientos
@@ -58,15 +58,51 @@
                                     {% endfor %}
                                 </div>
                             </td>
-                            <td class="text-center">
-                                {% if v.estado == 'COMPLETADO' %}
-                                    <span class="badge badge-success-soft text-success px-2 py-1 x-small font-weight-bold">COMPLETADO</span>
-                                {% elif v.estado == 'PENDIENTE' %}
-                                    <span class="badge badge-warning-soft text-warning px-2 py-1 x-small font-weight-bold">PENDIENTE</span>
-                                {% else %}
-                                    <span class="badge badge-secondary-soft text-muted px-2 py-1 x-small font-weight-bold">{{ v.estado }}</span>
-                                {% endif %}
-                            </td>
+                            <td class="text-right pr-4">
+    <div class="dropdown">
+        <button class="btn btn-xs font-weight-bold px-2 
+            {% if v.estado == 'PENDIENTE' %}btn-warning-soft
+            {% elif v.estado == 'COMPLETADO' %}btn-success-soft
+            {% else %}btn-secondary-soft{% endif %}"
+            {% if v.estado != 'COMPLETADO' %} data-toggle="dropdown" {% endif %}
+            style="font-size:0.65rem;" data-boundary="window">
+            {{ v.estado }}
+        </button>
+        
+        {% if v.estado != 'COMPLETADO' %}
+        <div class="dropdown-menu dropdown-menu-right shadow border-0" data-boundary="window">
+            <a class="dropdown-item py-2 d-flex align-items-center btn-finalizar-visita"
+               href="javascript:void(0)"
+               data-id="{{ v.id }}"
+               data-cliente="{{ v.cliente.nombre }}"
+               data-servicio="{{ v.servicio }}">
+                <i class="fa-solid fa-check-circle text-success mr-2"></i>
+                <span class="small font-weight-bold">Finalizar y Facturar</span>
+            </a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item btn-reagendar"
+               href="#"
+               data-id="{{ v.id }}"
+               data-cliente="{{ v.cliente.nombre }}"
+               data-fecha="{{ v.fecha }}"
+               data-cuadrilla="{{ v.cuadrilla_id }}"
+               data-servicio="{{ v.servicio }}"
+               data-hora="{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}">
+                <i class="fa-solid fa-calendar-day text-info mr-2"></i>
+                <span class="small font-weight-bold">Reagendar</span>
+            </a>
+            <div class="dropdown-divider"></div>
+            <form action="{{ url_for('eliminar_visita', id=v.id) }}" method="POST"
+                  onsubmit="return confirm('¿Eliminar esta visita permanentemente?');">
+                <button type="submit" class="dropdown-item py-2 d-flex align-items-center text-danger">
+                    <i class="fa-solid fa-trash-can mr-2 opacity-75"></i>
+                    <span class="small font-weight-bold">Eliminar</span>
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</td>
                             <td class="text-right pr-4">
                                 {% set total_visita = v.detalles|sum(attribute='total') %}
                                 {% set items_pagados = v.detalles|selectattr('estado_pago', 'equalto', 'PAGADO')|list|length %}
@@ -111,4 +147,620 @@
     .badge-secondary-soft { background-color: #f5f5f5; color: #757575; }
     .x-small { font-size: 0.7rem; }
 </style>
+
+<div class="modal fade" id="modalReagendar" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <form id="formReagendar" method="POST" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title text-secondary"><i class="fa-solid fa-calendar-day mr-2 text-info"></i>Reagendar Servicio</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted mb-4">Modifique los detalles para reprogramar la visita de <strong id="reagendar_cliente_nombre"></strong>.</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Nueva Fecha</label>
+                            <input type="date" 
+                                name="fecha" 
+                                id="reagendar_fecha" 
+                                class="form-control" 
+                                required 
+                                onchange="validarFechaNoLaboral(this)">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Hora</label>
+                            <select name="hora_sugerida" id="reagendar_hora" class="form-control">
+                                {% for h in range(7, 19) %}
+                                    <option value="{{ "%02d:00" | format(h) }}">{{ "%02d:00" | format(h) }}</option>
+                                    <option value="{{ "%02d:30" | format(h) }}">{{ "%02d:30" | format(h) }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Cuadrilla</label>
+                            <!-- <select name="cuadrilla_id" id="reagendar_cuadrilla" class="form-control">
+                                <option value="1">Cuadrilla 1</option>
+                                <option value="2">Cuadrilla 2</option>
+                            </select> -->
+                            <select name="cuadrilla_id" 
+                                    id="reagendar_cuadrilla" 
+                                    class="form-control form-control-sm shadow-none" 
+                                    required>
+                                <option value="" disabled>Seleccione un equipo...</option>
+                                
+                                {% for c in cuadrillas %}
+                                    <option value="{{ c.id }}">
+                                        {{ c.nombre_cuadrilla | upper }}
+                                    </option>
+                                {% else %}
+                                    <option disabled>No hay equipos configurados</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Servicio</label>
+                            <select name="servicio" id="reagendar_servicio" class="form-control">
+                                <option value="PISCINA Y JARDÍN">PISCINA Y JARDÍN</option>
+                                <option value="SOLO PISCINA">SOLO PISCINA</option>
+                                <option value="SOLO JARDÍN">SOLO JARDÍN</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="small font-weight-bold text-uppercase">Observaciones especiales</label>
+                            <textarea name="observaciones" class="form-control" rows="2" placeholder="Notas adicionales para la cuadrilla..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-sm btn-info px-4">Actualizar Visita</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalFinalizarVisita" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <form action="{{ url_for('guardar_facturacion') }}" method="POST" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title h6 font-weight-bold">DETALLE DE FACTURACIÓN: <span id="nombre_cliente_factura"></span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            
+            <div class="modal-body bg-light">
+                <input type="hidden" name="visita_id" id="factura_visita_id">
+                
+                <div class="table-responsive bg-white rounded shadow-sm">
+                    <table class="table table-sm mb-0" id="tabla_items_factura">
+                        <thead class="thead-dark small">
+                            <tr>
+                                <th style="width: 40%">DESCRIPCIÓN / SERVICIO</th>
+                                <th style="width: 10%">CANT.</th>
+                                <th style="width: 15%">PRECIO UNIT.</th>
+                                <th style="width: 15%">SUBTOTAL</th>
+                                <th style="width: 15%">ESTADO</th>
+                                <th style="width: 5%"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>filas</tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-3">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarFilaFactura()">
+                        <i class="fa-solid fa-plus-circle mr-1"></i> Agregar Ítem Facturable
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-white">
+                <div class="mr-auto">
+                    <h5 class="mb-0 text-muted">TOTAL A FACTURAR: <span class="text-dark font-weight-bold" id="gran_total">0</span> Gs.</h5>
+                </div>
+                <button type="submit" class="btn btn-success px-5 font-weight-bold">GUARDAR Y FINALIZAR VISITA</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+{{  super() }}
+<script>
+
+
+// Visita detail map built from Jinja — populated once on page load
+const VISITAS_DETAIL = {};
+{% for week_monday, week_saturday, dias in semanas %}
+  {% for fecha, visitas_dia in dias.items() %}
+    {% for v in visitas_dia %}
+    VISITAS_DETAIL[{{ v.id }}] = {
+        cliente:   "{{ v.cliente.nombre | upper | e }}",
+        sucursal:  "{{ v.ubicacion.nombre_sucursal | e if v.ubicacion else '' }}",
+        barrio:    "{{ v.ubicacion.barrio | e if v.ubicacion and v.ubicacion.barrio else '' }}",
+        ciudad:    "{{ v.ubicacion.ciudad | e if v.ubicacion and v.ubicacion.ciudad else '' }}",
+        servicio:  "{{ v.servicio | e }}",
+        observaciones:  "{{ v.observaciones | e if v.observaciones else '' }}",
+        hora:      "{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}",
+        mapsUrl:   "{{ v.ubicacion.coordenadas_url | e if v.ubicacion and v.ubicacion.coordenadas_url else '' }}"
+    };
+    {% endfor %}
+  {% endfor %}
+{% endfor %}
+
+// Open modal and render styled preview
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-hoja-ruta');
+    if (!btn) return;
+
+    const payload = JSON.parse(btn.dataset.payload);
+    const visitas = payload.visitas.map(id => VISITAS_DETAIL[id]).filter(Boolean);
+
+    // Subtitle in header
+    document.getElementById('hojaRutaSubtitle').textContent =
+        payload.cuadrilla + ' · ' + payload.fecha;
+
+    // Header strip
+    let headerHtml = `
+        <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap:0.5rem;">
+            <div>
+                <div class="font-weight-bold text-uppercase" style="font-size:0.8rem; color:#1e2a24;">
+                    ${payload.cuadrilla}
+                </div>
+                <div class="x-small text-muted">${payload.fecha}</div>
+            </div>
+            ${payload.vehiculo ? `
+            <span class="badge badge-secondary-soft" style="font-size:0.68rem;">
+                <i class="fa-solid fa-truck-pickup mr-1"></i>${payload.vehiculo}
+            </span>` : ''}
+        </div>`;
+    document.getElementById('hojaRutaHeader').innerHTML = headerHtml;
+
+    // Visit list
+    let listHtml = '';
+    visitas.forEach((v, i) => {
+        const addr = [v.sucursal, v.barrio, v.ciudad].filter(Boolean).join(' — ');
+        listHtml += `
+        <div style="padding:0.65rem 1.25rem; ${i < visitas.length-1 ? 'border-bottom:1px solid #f1f5f9;' : ''}">
+            <div class="d-flex align-items-start" style="gap:0.65rem;">
+                <span class="font-weight-bold" style="min-width:18px; color:#2c6350; font-size:0.8rem;">${i+1}.</span>
+                <div style="flex:1;">
+                    <div class="font-weight-bold text-uppercase" style="font-size:0.78rem;">${v.cliente}</div>
+                    ${addr ? `<div class="x-small text-muted"><i class="fa-solid fa-location-dot mr-1 text-danger" style="font-size:0.6rem;"></i>${addr}</div>` : ''}
+                    <div class="d-flex align-items-center mt-1" style="gap:0.75rem;">
+                        <span class="x-small" style="color:#4a5568;">
+                            <i class="fa-solid fa-wrench mr-1" style="font-size:0.6rem;"></i>${v.servicio}
+                        </span>
+                        ${v.hora ? `<span class="x-small font-weight-bold" style="color:#2c6350;">
+                            <i class="fa-regular fa-clock mr-1" style="font-size:0.6rem;"></i>${v.hora}
+                        </span>` : ''}
+                        <span class="x-small" style="color:#4a5568;">
+                            <i class="fa-solid fa-comment-dots mr-1" style="font-size:0.6rem;"></i>${v.observaciones || 'Sin observaciones'}
+                        </span>
+                    </div>
+                    ${v.mapsUrl ? `<a href="${v.mapsUrl}" target="_blank" class="x-small font-weight-bold"
+                        style="color:#2b6cb0; text-decoration:none;">
+                        <i class="fa-solid fa-map-location-dot mr-1" style="font-size:0.6rem;"></i>Ver en mapa
+                    </a>` : ''}
+                </div>
+            </div>
+        </div>`;
+    });
+    document.getElementById('hojaRutaLista').innerHTML = listHtml || 
+        '<p class="text-muted x-small text-center p-4">Sin visitas</p>';
+});
+
+// Build plain WhatsApp text and copy
+function copiarHojaRuta() {
+    const subtitle = document.getElementById('hojaRutaSubtitle').textContent;
+    const parts = subtitle.split(' · ');
+    const cuadrilla = parts[0] || '';
+    const fecha = parts[1] || '';
+
+    const vehiculoEl = document.querySelector('#hojaRutaHeader .badge');
+    const vehiculo = vehiculoEl ? vehiculoEl.textContent.trim() : '';
+
+    let text = `🗓 *${fecha}*\n`;
+    text += `🚛 *${cuadrilla}*${vehiculo ? ' — ' + vehiculo : ''}\n\n`;
+
+    const items = document.querySelectorAll('#hojaRutaLista > div');
+    items.forEach((item, i) => {
+        const cliente     = item.querySelector('.font-weight-bold.text-uppercase')?.textContent.trim() || '';
+        const addr        = item.querySelector('.x-small.text-muted')?.textContent.trim() || '';
+        const servicio    = item.querySelectorAll('.x-small')[1]?.textContent.trim() || '';
+        const hora        = item.querySelectorAll('.x-small')[2]?.textContent.trim() || '';
+        const observacion = item.querySelectorAll('.x-small')[3]?.textContent.trim() || '';
+
+        const mapsA    = item.querySelector('a');
+        const maps     = mapsA ? mapsA.href : '';
+
+        text += `${i+1}. *${cliente}*\n`;
+        if (addr)         text += `   📍 ${addr}\n`;
+        if (servicio)     text += `   🔧 ${servicio}\n`;
+        if (hora)         text += `   🕐 ${hora}\n`;
+        if (observacion)  text += `   💬 ${observacion}\n`;
+        if (maps)         text += `   🗺 ${maps}\n`;
+        text += '\n';
+    });
+
+    text += '*_Generado desde OT Planning_*';
+
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btnCopiarHoja');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copiado!';
+        btn.style.background = '#2c6350';
+        setTimeout(() => { btn.innerHTML = orig; btn.style.background = '#25D366'; }, 2200);
+    }).catch(() => document.execCommand('copy'));
+}
+
+$(document).ready(function() {
+    const $select = $('#select_cliente_recurrencia');
+
+    $select.select2({
+        theme: 'bootstrap4',
+        placeholder: '-- SELECCIONE O BUSQUE UN CLIENTE --',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Escuchador específico para Select2
+    $select.on('select2:select', function(e) {
+        // Disparamos manualmente un evento 'change' nativo para que tu 
+        // otro script (el document.addEventListener) lo detecte.
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    // También manejar cuando se limpia el campo (allowClear)
+    $select.on('select2:unselect', function(e) {
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+});
+
+$(document).ready(function() {
+    const $select = $('#select_cliente_esporadico');
+
+    $select.select2({
+        theme: 'bootstrap4',
+        placeholder: '-- SELECCIONE O BUSQUE UN CLIENTE --',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Escuchador específico para Select2
+    $select.on('select2:select', function(e) {
+        // Disparamos manualmente un evento 'change' nativo para que tu 
+        // otro script (el document.addEventListener) lo detecte.
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    // También manejar cuando se limpia el campo (allowClear)
+    $select.on('select2:unselect', function(e) {
+        this.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+});
+
+function validarFechaNoLaboral(input) {
+    const feriadosLista = JSON.parse('{{ feriados_json | safe }}' || '[]');
+    const fechaSeleccionada = input.value;
+    
+    if (!fechaSeleccionada) return;
+
+    let fechaObj = new Date(fechaSeleccionada + 'T00:00:00');
+    let diaSemana = fechaObj.getDay(); // 0 = Domingo
+
+    if (diaSemana === 0 || feriadosLista.includes(fechaSeleccionada)) {
+        alert("La fecha seleccionada es Domingo o Feriado. Por favor, elija un día laboral.");
+        input.value = ''; // Limpiamos el input para obligar a elegir otro día
+    }
+}
+
+// NUEVA VERSIÓN ADAPTADA A DÍAS DE LA SEMANA (0=Lunes, 5=Sábado)
+function calcularSegundoDiaDesdeSemana(diaIndexStr) {
+    const feriadosLista = JSON.parse('{{ feriados_json | safe }}' || '[]');
+    const select = document.getElementById('select_segundo_dia');
+    
+    if (!diaIndexStr) return;
+
+    const objetivo = parseInt(diaIndexStr) + 1; // Ajuste: 0 en tu HTML es Lunes, Date().getDay() usa 1 para Lunes.
+    let fechaSimulada = new Date();
+    
+    // Buscar la próxima fecha que coincida con el día seleccionado
+    let diferencia = (objetivo + 7 - fechaSimulada.getDay()) % 7;
+    fechaSimulada.setDate(fechaSimulada.getDate() + diferencia);
+    fechaSimulada.setHours(0,0,0,0);
+
+    let diasSumados = 0;
+    
+    // Regla de +2 días hábiles
+    while (diasSumados < 2) {
+        fechaSimulada.setDate(fechaSimulada.getDate() + 1);
+        let diaSemana = fechaSimulada.getDay(); // 0 es Domingo
+        let fechaISO = fechaSimulada.toISOString().split('T')[0];
+        
+        if (diaSemana !== 0 && !feriadosLista.includes(fechaISO)) {
+            diasSumados++;
+        }
+    }
+
+    const opciones = { weekday: 'short', day: 'numeric', month: 'short' };
+    const textoLegible = fechaSimulada.toLocaleDateString('es-PY', opciones).toUpperCase();
+
+    // Como guardas el día de la semana, guardamos el índice (Ajustando Lunes=0)
+    let nuevoDiaIndex = fechaSimulada.getDay() - 1; 
+    if (nuevoDiaIndex === -1) nuevoDiaIndex = 6; // Por si acaso cae domingo (no debería por el while)
+
+    select.innerHTML = `<option value="${nuevoDiaIndex}">Sugerido: ${textoLegible}</option>`;
+    $('#div_segundo_dia').fadeIn();
+}
+
+function toggleFrecuencia() {
+    const frec = document.getElementById('select_frecuencia').value;
+    const div2do = document.getElementById('div_segundo_dia');
+    // Obtenemos el selector que ya tienes en el HTML
+    const diaSeleccionado = document.querySelector('select[name="dia_semana"]').value;
+    
+    if (frec === 'SEMANAL_2X') {
+        $(div2do).fadeIn();
+        if (diaSeleccionado !== "") {
+            calcularSegundoDiaDesdeSemana(diaSeleccionado);
+        }
+    } else {
+        $(div2do).fadeOut();
+    }
+}
+
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.classList.contains('select-cliente-trigger')) {
+        const clienteId = e.target.value;
+        const isEsp = e.target.id.includes('esp');
+        const targetUbi = document.getElementById(isEsp ? 'select_ubicacion_esp' : 'select_ubicacion');
+        const targetSrv = document.getElementById(isEsp ? 'select_servicio_esp' : 'select_servicio');
+
+        if (!clienteId) return;
+
+        fetch(`${window.location.origin}/api/ubicaciones/${clienteId}`)
+            .then(r => r.json())
+            .then(data => {
+                targetUbi.disabled = false;
+                targetUbi.innerHTML = data.map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
+            });
+
+        fetch(`${window.location.origin}/api/cliente-detalle/${clienteId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.tipo_contrato) targetSrv.value = data.tipo_contrato.toUpperCase();
+            });
+    }
+
+    if (e.target && e.target.classList.contains('select-servicio')) {
+        fetch(`${window.location.origin}/api/visita/update-servicio`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                visita_id: e.target.dataset.visitaId,
+                nuevo_servicio: e.target.value
+            })
+        });
+    }
+});
+
+function cambiarEstado(visitaId, estado) {
+    fetch(`${window.location.origin}/api/visita/update-estado`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            visita_id: visitaId,
+            nuevo_estado: estado
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Actualiza el texto y color del botón dinámicamente
+            const btn = document.getElementById(`statusBtn${visitaId}`);
+            btn.innerText = data.nuevo_estado;
+            
+            // Limpiar clases previas y aplicar la nueva según el estado
+            btn.className = 'btn btn-sm btn-block dropdown-toggle font-weight-bold status-btn';
+            if (estado === 'COMPLETADO') btn.classList.add('btn-success-soft');
+            else if (estado === 'PENDIENTE') btn.classList.add('btn-warning-soft');
+            else btn.classList.add('btn-secondary-soft');
+            
+        }
+    })
+    .catch(err => alert("Error al actualizar el estado"));
+}
+
+function cambiarEstadoConNota(visitaId, estado, esObligatorio) {
+    let mensaje = `Ingrese observaciones para el estado ${estado}:`;
+    if (esObligatorio) mensaje = `[OBLIGATORIO] ¿Por qué la cuadrilla no asistió?`;
+
+    const nota = prompt(mensaje);
+
+    // Si es obligatorio y cancela o deja vacío, no hace nada
+    if (esObligatorio && (!nota || nota.trim() === "")) {
+        alert("Para marcar 'No Asistió' debe proveer una explicación.");
+        return;
+    }
+
+    fetch(`${window.location.origin}/api/visita/update-estado`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            visita_id: visitaId,
+            nuevo_estado: estado,
+            observaciones: nota || ""
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload(); // Recargamos para ver los cambios y badges de notas
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(err => alert("Error de conexión al servidor"));
+}
+
+function prepararReagendar(id, cliente, fecha, cuadrilla, servicio, hora) {
+    // Seteamos el action del form dinámicamente
+    document.getElementById('formReagendar').action = `/visita/reagendar/${id}`;
+    
+    // Cargamos los datos en los campos del modal
+    document.getElementById('reagendar_cliente_nombre').innerText = cliente;
+    document.getElementById('reagendar_fecha').value = fecha;
+    document.getElementById('reagendar_cuadrilla').value = cuadrilla;
+    document.getElementById('reagendar_servicio').value = servicio;
+    if(hora) document.getElementById('reagendar_hora').value = hora;
+
+    // Abrimos el modal manualmente
+    $('#modalReagendar').modal('show');
+}
+
+
+
+$('.btn-reagendar').on('click', function() {
+    const d = $(this).data();
+    prepararReagendar(d.id, d.cliente, d.fecha, d.cuadrilla, d.servicio, d.hora);
+});
+
+function recalcular() {
+    let granTotal = 0;
+    $('.fila-item').each(function() {
+        const cant = parseFloat($(this).find('.val-cant').val()) || 0;
+        const precio = parseFloat($(this).find('.val-precio').val()) || 0;
+        const subtotal = cant * precio;
+        $(this).find('.val-subtotal').text(subtotal.toLocaleString());
+        granTotal += subtotal;
+    });
+    $('#gran_total').text(granTotal.toLocaleString());
+}
+
+function prepararFinalizacion(id, cliente, servicio, precioBase) {
+    $('#factura_visita_id').val(id);
+    $('#nombre_cliente_factura').text(cliente);
+    $('#tabla_items_factura tbody').empty();
+    
+    // Agregamos el servicio principal automáticamente
+    agregarFilaFactura(servicio, precioBase);
+    
+    $('#modalFinalizarVisita').modal('show');
+}
+
+$(document).on('click', '.btn-finalizar-visita', function() {
+    const d = $(this).data();
+    
+    if (!d.id) {
+        return;
+    }
+    
+    abrirFacturacion(d.id, d.cliente, d.servicio);
+});
+
+function abrirFacturacion(id, cliente, servicio) {
+    
+    // 1. Verificar si el botón que disparó el evento indica que ya está completado
+    const btnOrigen = document.querySelector(`[data-id="${id}"]`);
+    if (btnOrigen && btnOrigen.innerText.trim() === 'COMPLETADO') {
+        alert("Esta visita ya ha sido completada y su facturación está bloqueada.");
+        return;
+    }
+
+    // Referencias a elementos del DOM para verificar si existen
+    const modal = $('#modalFinalizarVisita');
+    const inputId = $('#factura_visita_id');
+    const spanCliente = $('#nombre_cliente_factura');
+
+
+    // Seteamos datos básicos
+    inputId.val(id);
+    spanCliente.text(cliente);
+    $('#tabla_items_factura tbody').empty();
+
+    fetch(`${window.location.origin}/api/cliente-detalle-por-visita/${id}`)
+        .then(r => {
+            return r.json();
+        })
+        .then(data => {
+            // Agregamos la fila
+            agregarFilaFactura(servicio, data.precio_base || 0);
+            
+            modal.modal('show');
+        })
+        .catch(err => {
+            agregarFilaFactura(servicio, 0);
+            modal.modal('show');
+        });
+}
+
+function agregarFilaFactura(desc = "", precio = 0) {
+    const row = `
+        <tr class="fila-item">
+            <td><input type="text" name="desc[]" class="form-control form-control-sm border-0" value="${desc}" required></td>
+            <td><input type="number" name="cant[]" class="form-control form-control-sm border-0 text-center val-cant" value="1" onchange="recalcular()"></td>
+            <td><input type="number" name="precio[]" class="form-control form-control-sm border-0 val-precio" value="${precio}" onchange="recalcular()"></td>
+            <td class="font-weight-bold text-right py-2 val-subtotal">0</td>
+            <td>
+                <select name="pago_estado[]" class="form-control form-control-sm select-estado-pago" onchange="toggleMetodoPago(this)">
+                    <option value="PENDIENTE">PENDIENTE</option>
+                    <option value="PAGADO">PAGADO</option>
+                </select>
+                <select name="metodo_pago_item[]" class="form-control form-control-sm mt-1 select-metodo-pago" style="display: none;">
+                    <option value="EFECTIVO">EFECTIVO</option>
+                    <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                    <option value="CHEQUE">CHEQUE</option>
+                </select>
+            </td>
+            <td><button type="button" class="btn btn-sm text-danger" onclick="$(this).closest('tr').remove(); recalcular();">&times;</button></td>
+        </tr>`;
+    $('#tabla_items_factura tbody').append(row);
+    recalcular();
+}
+
+function toggleMetodoPago(selectElement) {
+    const metodoSelect = $(selectElement).siblings('.select-metodo-pago');
+    if (selectElement.value === 'PAGADO') {
+        metodoSelect.show().attr('required', true);
+    } else {
+        metodoSelect.hide().attr('required', false);
+    }
+}
+
+$('#modalGenerarSemana').on('show.bs.modal', function () {
+    const today = new Date();
+    // days until next Monday (if today is Mon, that's 7 days ahead)
+    const daysUntilMon = (7 - today.getDay() + 1) % 7 || 7;
+    const nextMon = new Date(today);
+    nextMon.setDate(today.getDate() + daysUntilMon);
+    const nextSat = new Date(nextMon);
+    nextSat.setDate(nextMon.getDate() + 5);
+
+    const fmt = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    const monStr = nextMon.toLocaleDateString('es-PY', fmt);
+    const satStr = nextSat.toLocaleDateString('es-PY', fmt);
+    document.getElementById('semana_label').textContent = `${monStr}  →  ${satStr}`;
+});
+</script>
 {% endblock %}

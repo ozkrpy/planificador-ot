@@ -101,8 +101,18 @@
 {% endmacro %}
 
 {% block main %}
-<div class="container-fluid">
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="h4 font-weight-bold text-dark-green mb-0 text-uppercase">Administracion de clientes/proveedores</h2>
+            <p class="header-subtitle mb-0 text-uppercase">Informacion general de los clientes y proveedores.</p>
+        </div>
+        <div class="text-muted opacity-50">
+            <i class="fa-solid fa-money-bill-1 fa-2x"></i>
+        </div>
+    </div>
     <div class="row">
+
         <div class="col-md-3">
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-light x-small font-weight-bold">{{ txt.AJUSTES }}</div>

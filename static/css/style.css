@@ -113,7 +113,13 @@ body {
     box-shadow: var(--shadow-sm);
     margin-bottom: 1.25rem;
     overflow: visible !important;
-}
+    transition: transform 0.2s ease; /* nueva linea para efecto hover */
+    position: relative;
+    z-index: 1;
+} 
+.card:hover { /* Efecto sutil al pasar el mouse */
+    transform: translateY(-3px);
+} /* hasta aca si hace falta eliminar */ 
 .card-header {
     background: var(--gray-50);
     border-bottom: 1px solid var(--border);
@@ -136,6 +142,11 @@ body {
     border-top: 1px solid var(--border);
     border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
     padding: 0.75rem 1.25rem;
+}
+
+.card:focus-within,
+.card:has(.show) {
+    z-index: 1020 !important;
 }
 
 /* Primary (green) card header — replaces card-header-custom, background-primario */
@@ -184,6 +195,14 @@ body {
 
 /* Top-accented client card */
 .card-cliente { border-top: 3px solid var(--brand-700) !important; }
+
+.card, .table-hover tbody tr:hover {
+    z-index: 1;
+}
+
+.dropdown.show {
+    z-index: 2000;
+}
 
 /* PAGE HEADER pattern */
 .d-flex.justify-content-between.align-items-center.mb-4.border-bottom.pb-3 h2,
@@ -412,7 +431,14 @@ label {
 .alert-danger  { background: var(--color-danger-bg);    border-color: #feb2b2;          color: var(--color-danger-text); }
 
 /* DROPDOWNS */
-.dropdown-menu { border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); font-size: 0.82rem; padding: 0.35rem 0; }
+.dropdown-menu { 
+    border: 1px solid var(--border); 
+    border-radius: var(--radius-md); 
+    box-shadow: var(--shadow-md); 
+    font-size: 0.82rem; 
+    padding: 0.35rem 0; 
+    z-index: 1050 !important;
+}
 .dropdown-item { padding: 0.5rem 1rem; color: var(--gray-800); font-weight: 500; transition: background 0.1s; }
 .dropdown-item:hover { background-color: var(--gray-50); color: var(--gray-900); }
 .dropdown-item.text-danger { color: var(--color-danger) !important; }
@@ -431,6 +457,7 @@ label {
 .border-left-danger  { border-left: 4px solid var(--color-danger) !important; }
 .border-left-success { border-left: 4px solid var(--brand-700) !important; }
 .border-left-dark    { border-left: 4px solid var(--gray-400) !important; }
+.opacity-25 { opacity: 0.25; } /* nueva linea */
 .opacity-50 { opacity: 0.5; }
 .opacity-75 { opacity: 0.75; }
 .rounded-pill { border-radius: 50px !important; }
@@ -557,4 +584,15 @@ tr[style*="background-color: #14212f"] { background-color: var(--gray-900) !impo
     .login-card-header {
         display: none; /* Opcional: oculta logos/títulos grandes para ganar espacio */
     }
+}
+
+/* .bg-dark { background-color: #1a1a1a !important; }
+ */
+.bg-dark { 
+    background-color: var(--gray-900) !important; 
+}
+
+/* Si quieres el gradiente, defínelo manualmente: */
+.bg-gradient-dark {
+    background: linear-gradient(180deg, var(--gray-900) 20%, var(--brand-900) 100%) !important;
 }

@@ -77,7 +77,7 @@
                         {# Cards row — one card per cuadrilla that has visits this day #}
                         <div class="row">
                             {% for c in cuadrillas %}
-                            {% set visitas_cuadrilla_dia = visitas_dia | selectattr('cuadrilla', 'equalto', c.id) | list %}
+                            {% set visitas_cuadrilla_dia = visitas_dia | selectattr('cuadrilla_id', 'equalto', c.id) | list %}
                                 {% if visitas_cuadrilla_dia %}
                                     <div class="col-xl-6 col-lg-12 mb-3">
                                         <div class="card shadow-sm border-0">
@@ -178,7 +178,7 @@
                                                                                 data-id="{{ v.id }}"
                                                                                 data-cliente="{{ v.cliente.nombre }}"
                                                                                 data-fecha="{{ v.fecha }}"
-                                                                                data-cuadrilla="{{ v.cuadrilla }}"
+                                                                                data-cuadrilla="{{ v.cuadrilla_id }}"
                                                                                 data-servicio="{{ v.servicio }}"
                                                                                 data-hora="{{ v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else '' }}">
                                                                                     <i class="fa-solid fa-calendar-day text-info mr-2"></i>
@@ -299,7 +299,7 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Servicio</label>
-                            <select name="servicio" class="form-control" id="select_servicio">
+                            <select name="servicio" class="form-control" id="select_servicio" required>
                                 <option value="PISCINA Y JARDÍN">PISCINA Y JARDÍN</option>
                                 <option value="SOLO PISCINA">SOLO PISCINA</option>
                                 <option value="SOLO JARDÍN">SOLO JARDÍN</option>
@@ -406,7 +406,7 @@
                                 name="fecha" 
                                 class="form-control" 
                                 required 
-                                value="{{ hoy }}" 
+                                value="" 
                                 onchange="validarFechaNoLaboral(this)">
                         </div>
                     </div>
@@ -449,7 +449,9 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Servicio</label>
-                            <select name="servicio" id="select_servicio_esp" class="form-control">
+                            <select name="servicio" id="select_servicio_esp" class="form-control" 
+                            oninvalid="this.setCustomValidity('Se debe definir el tipo de servicio!')" 
+                            oninput="this.setCustomValidity('')" required >
                                 <option value="PISCINA Y JARDÍN">PISCINA Y JARDÍN</option>
                                 <option value="SOLO PISCINA">SOLO PISCINA</option>
                                 <option value="SOLO JARDÍN">SOLO JARDÍN</option>
