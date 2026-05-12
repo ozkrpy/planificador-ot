@@ -51,8 +51,8 @@
                 <div class="d-flex align-items-center mb-3 {% if not loop.first %}mt-5{% endif %}">
                     <div class="flex-grow-1" style="height:1px; background:#e2e8f0;"></div>
                         <div class="mx-3 px-3 py-1 rounded"
-                            style="background:#1e2a24; color:#fff; font-size:0.68rem;
-                                    font-weight:700; letter-spacing:0.08em; text-transform:uppercase; white-space:nowrap;">
+                            style="background: var(--week-bg); color: var(--week-text); 
+                            font-size: 0.75rem; font-weight: 600; border: 1px solid #cbd5e0;">
                             <i class="fa-solid fa-calendar-week mr-2"></i>
                             SEMANA {{ week_monday.strftime('%d/%m') }} – {{ week_saturday.strftime('%d/%m/%Y') }}
                         </div>
@@ -66,8 +66,8 @@
                     <div class="mb-3">
                         {# Day label #}
                         <div class="d-flex align-items-center mb-2">
-                            <span class="badge badge-secondary mr-2"
-                                style="font-size:0.65rem; letter-spacing:0.06em; text-transform:uppercase;">
+                            <span class="badge mr-2" 
+                                style="background: #cbd5e0; color: #1e293b; font-size: 0.7rem; border-radius: 4px;">
                                 {{ dia_nombre }} {{ fecha.strftime('%d/%m') }}
                             </span>
                             <div style="height:1px; flex-grow:1; background:#f1f5f9;"></div>
@@ -82,13 +82,14 @@
                                     <div class="col-xl-6 col-lg-12 mb-3">
                                         <div class="card shadow-sm border-0">
 
-                                            <div class="card-header bg-white py-2 border-bottom-0">
+                                            <div class="card-header bg-white py-2 border-bottom-0" 
+                                                style="border-left: 4px solid var(--brand-700);">
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <div>
-                                                        <h6 class="mb-0 font-weight-bold text-dark text-uppercase"
-                                                            style="font-size:0.75rem; letter-spacing:0.5px;">
+                                                        <h6 class="mb-0 font-weight-bold text-dark-green" style="font-size:0.8rem;">
                                                             {{ c.nombre_cuadrilla }}
                                                         </h6>
+                                                    
                                                         <div class="x-small text-muted">
                                                             <i class="fa-solid fa-truck-pickup mr-1"></i>
                                                             {% if c.vehiculo_default %}
@@ -99,7 +100,7 @@
                                                             {% endif %}
                                                         </div>
                                                     </div>
-                                                    <span class="badge badge-pill badge-dark">
+                                                    <span class="badge badge-pill badge-light border text-dark">
                                                         {{ c.integrantes|length }} integrantes
                                                     </span>
                                                 </div>
@@ -147,6 +148,8 @@
                                                                     </div>
                                                                 </td>
                                                                 <td class="text-right pr-3">
+
+                                                                <div class="row">
                                                                     <div class="dropdown">
                                                                         <button class="btn btn-xs font-weight-bold px-2
                                                                             {% if v.estado == 'PENDIENTE' %}btn-warning-soft
@@ -200,6 +203,28 @@
                                                                             {% endif %}
                                                                         </div>
                                                                     </div>
+                                                                    <div class="font-weight-bold px-2">
+                                                                        {# BOTÓN OJO - NUEVO #}
+                                                                        {% set mv_data = {
+                                                                            "fecha": v.fecha.strftime('%d/%m/%Y'),
+                                                                            "hora": v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else 'S/H',
+                                                                            "estado": v.estado,
+                                                                            "cliente": v.cliente.nombre | upper,
+                                                                            "sucursal": v.ubicacion.nombre_sucursal if v.ubicacion else 'Principal',
+                                                                            "direccion": ((v.ubicacion.direccion if v.ubicacion else '') ~ ' - ' ~ (v.ubicacion.ciudad if v.ubicacion else '')) | replace('\n', ' ') | replace('\r', ''),
+                                                                            "servicio": v.servicio,
+                                                                            "cuadrilla": v.config_cuadrilla.nombre_cuadrilla if v.config_cuadrilla else 'SIN ASIGNAR',
+                                                                            "observaciones": (v.observaciones or 'Sin observaciones') | replace('\n', ' ') | replace('\r', ''),
+                                                                            "vehiculo": (v.config_cuadrilla.vehiculo_default.denominacion if v.config_cuadrilla and v.config_cuadrilla.vehiculo_default else 'N/A'),
+                                                                            "chapa": (v.config_cuadrilla.vehiculo_default.chapa if v.config_cuadrilla and v.config_cuadrilla.vehiculo_default else ''),
+                                                                            "maps": v.ubicacion.coordenadas_url if v.ubicacion else ''
+                                                                        } %}
+                                                                        <button class="btn btn-link p-0 ml-1 text-muted btn-ver-visita" 
+                                                                                data-payload='{{ mv_data | tojson | safe }}'>
+                                                                            <i class="fa-solid fa-eye" style="font-size: 0.75rem;"></i>
+                                                                        </button>
+                                                                    </div>                                                                        
+                                                                </div>
                                                                 </td>
                                                             </tr>
                                                             {% endfor %}
@@ -217,11 +242,11 @@
                                                         "visitas": visitas_cuadrilla_dia | map(attribute="id") | list
                                                     } %}
                                                     <button class="btn btn-outline-secondary btn-sm x-small font-weight-bold btn-hoja-ruta"
-                                                            data-toggle="modal" data-target="#modalHojaRuta"
-                                                            data-payload='{{ payload | tojson | e }}'
-                                                            title="Ver hoja de ruta para WhatsApp">
-                                                        <i class="fa-brands fa-whatsapp mr-1 text-success"></i> HOJA DE RUTA
-                                                    </button>
+        data-toggle="modal" data-target="#modalHojaRuta"
+        data-payload='{{ payload | tojson | safe }}'
+        title="Ver hoja de ruta para WhatsApp">
+    <i class="fa-brands fa-whatsapp mr-1 text-success"></i> HOJA DE RUTA
+</button>
                                                 </div>
                                             </div> <!-- cierre del footer  -->
 
@@ -268,7 +293,9 @@
                 </div>
                 <div class="form-group">
                     <label class="small font-weight-bold text-uppercase">Ubicación / Sucursal</label>
-                    <select name="ubicacion_id" id="select_ubicacion" class="form-control" required disabled>
+                    <select name="ubicacion_id" id="select_ubicacion" class="form-control" 
+                        oninvalid="this.setCustomValidity('Se debe definir la ubicacion para el servicio!')" 
+                        oninput="this.setCustomValidity('')" required disabled>
                         <option value="">-- Elija primero un cliente --</option>
                     </select>
                 </div>
@@ -276,13 +303,11 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Cuadrilla</label>
-                            <!-- <select name="cuadrilla_id" class="form-control">
-                                <option value="1">Cuadrilla 1</option>
-                                <option value="2">Cuadrilla 2</option>
-                            </select> -->
                             <select name="cuadrilla_id" 
                                     id="agendar_cuadrilla" 
                                     class="form-control form-control-sm shadow-none" 
+                                    oninvalid="this.setCustomValidity('Se debe definir la cuadrilla asignada!')" 
+                                    oninput="this.setCustomValidity('')" 
                                     required>
                                 <option value="" disabled>Seleccione un equipo...</option>
                                 
@@ -299,7 +324,7 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Servicio</label>
-                            <select name="servicio" class="form-control" id="select_servicio" required>
+                            <select name="servicio" class="form-control" id="select_servicio" oninvalid="this.setCustomValidity('Se debe definir el tipo de servicio!')" oninput="this.setCustomValidity('')" required>
                                 <option value="PISCINA Y JARDÍN">PISCINA Y JARDÍN</option>
                                 <option value="SOLO PISCINA">SOLO PISCINA</option>
                                 <option value="SOLO JARDÍN">SOLO JARDÍN</option>
@@ -311,7 +336,7 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Día de Visita</label>
-                            <select name="dia_semana"id="select_dia_principal" class="form-control" onchange="toggleFrecuencia()">
+                            <select name="dia_semana"id="select_dia_principal" class="form-control" onchange="toggleFrecuencia()" oninvalid="this.setCustomValidity('Se debe definir el día de visita!')" oninput="this.setCustomValidity('')" required>
                                 <option value="0">Lunes</option> <option value="1">Martes</option>
                                 <option value="2">Miércoles</option> <option value="3">Jueves</option>
                                 <option value="4">Viernes</option> <option value="5">Sábado</option>
@@ -373,12 +398,6 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="small font-weight-bold text-uppercase">Cliente</label>
-                    <!-- <select name="cliente_id" id="select_cliente_esp" class="form-control select-cliente-trigger" required>
-                        <option value="">-- Seleccione Cliente --</option>
-                        {% for c in clientes %}
-                            <option value="{{ c.id }}">{{ c.nombre }}</option>
-                        {% endfor %}
-                    </select> -->
                     <select name="cliente_id" 
                             id="select_cliente_esporadico" 
                             class="form-control select-cliente-trigger" 
@@ -394,7 +413,7 @@
 
                 <div class="form-group">
                     <label class="small font-weight-bold text-uppercase">Ubicación</label>
-                    <select name="ubicacion_id" id="select_ubicacion_esp" class="form-control" required disabled>
+                    <select name="ubicacion_id" id="select_ubicacion_esp" class="form-control" oninvalid="this.setCustomValidity('{{ txt.ALERTA_UBICACION }}')" oninput="this.setCustomValidity('')" required disabled>
                         <option value="">-- Primero elija cliente --</option>
                     </select>
                 </div>
@@ -405,7 +424,7 @@
                             <input type="date" 
                                 name="fecha" 
                                 class="form-control" 
-                                required 
+                                oninvalid="this.setCustomValidity('{{ txt.ALERTA_FECHA }}')" oninput="this.setCustomValidity('')" required 
                                 value="" 
                                 onchange="validarFechaNoLaboral(this)">
                         </div>
@@ -426,14 +445,10 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Cuadrilla</label>
-                            <!-- <select name="cuadrilla_id" class="form-control">
-                                <option value="1">Cuadrilla 1</option>
-                                <option value="2">Cuadrilla 2</option>
-                            </select> -->
                             <select name="cuadrilla_id" 
                                     id="esporadica_cuadrilla" 
                                     class="form-control form-control-sm shadow-none" 
-                                    required>
+                                    oninvalid="this.setCustomValidity('{{ txt.ALERTA_CUADRILLA }}')" oninput="this.setCustomValidity('')" required>
                                 <option value="" disabled>Seleccione un equipo...</option>
                                 
                                 {% for c in cuadrillas %}
@@ -450,7 +465,7 @@
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Servicio</label>
                             <select name="servicio" id="select_servicio_esp" class="form-control" 
-                            oninvalid="this.setCustomValidity('Se debe definir el tipo de servicio!')" 
+                            oninvalid="this.setCustomValidity('{{ txt.ALERTA_SERVICIO }}')" 
                             oninput="this.setCustomValidity('')" required >
                                 <option value="PISCINA Y JARDÍN">PISCINA Y JARDÍN</option>
                                 <option value="SOLO PISCINA">SOLO PISCINA</option>
@@ -494,7 +509,7 @@
                                 name="fecha" 
                                 id="reagendar_fecha" 
                                 class="form-control" 
-                                required 
+                                oninvalid="this.setCustomValidity('{{ txt.ALERTA_FECHA }}')" oninput="this.setCustomValidity('')" required 
                                 onchange="validarFechaNoLaboral(this)">
                         </div>
                     </div>
@@ -522,7 +537,7 @@
                             <select name="cuadrilla_id" 
                                     id="reagendar_cuadrilla" 
                                     class="form-control form-control-sm shadow-none" 
-                                    required>
+                                    oninvalid="this.setCustomValidity('{{ txt.ALERTA_CUADRILLA }}')" oninput="this.setCustomValidity('')" required> 
                                 <option value="" disabled>Seleccione un equipo...</option>
                                 
                                 {% for c in cuadrillas %}
@@ -538,7 +553,7 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Servicio</label>
-                            <select name="servicio" id="reagendar_servicio" class="form-control">
+                            <select name="servicio" id="reagendar_servicio" class="form-control" oninvalid="this.setCustomValidity('{{ txt.ALERTA_SERVICIO }}')" oninput="this.setCustomValidity('')" required  >
                                 <option value="PISCINA Y JARDÍN">PISCINA Y JARDÍN</option>
                                 <option value="SOLO PISCINA">SOLO PISCINA</option>
                                 <option value="SOLO JARDÍN">SOLO JARDÍN</option>
@@ -825,6 +840,9 @@ document.addEventListener('click', function(e) {
 
 // Build plain WhatsApp text and copy
 function copiarHojaRuta() {
+
+    console.log('Iniciando proceso de copiado de hoja de ruta...');
+
     const subtitle = document.getElementById('hojaRutaSubtitle').textContent;
     const parts = subtitle.split(' · ');
     const cuadrilla = parts[0] || '';
@@ -858,13 +876,71 @@ function copiarHojaRuta() {
 
     text += '*_Generado desde OT Planning_*';
 
-    navigator.clipboard.writeText(text).then(() => {
-        const btn = document.getElementById('btnCopiarHoja');
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copiado!';
-        btn.style.background = '#2c6350';
-        setTimeout(() => { btn.innerHTML = orig; btn.style.background = '#25D366'; }, 2200);
-    }).catch(() => document.execCommand('copy'));
+    if (navigator.clipboard && window.isSecureContext) {
+        console.log('Utilizando Clipboard API...');
+        navigator.clipboard.writeText(text).then(() => {
+            confirmarCopiado();
+        }).catch(err => {
+            console.error('Error con Clipboard API, intentando fallback', err);
+            copiadoManualFallback(text);
+        });
+    } else {
+        console.log('Clipboard API no disponible, utilizando fallback manual...');
+        // Fallback para HTTP o navegadores viejos (Tablets/Android)
+        copiadoManualFallback(text);
+    }
+}
+
+// Función de respaldo para contextos no seguros (HTTP / IP Local)
+function copiadoManualFallback(text) {
+    // Creamos el elemento
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    
+    // Lo hacemos "invisible" para el usuario pero "visible" para el navegador
+    textArea.style.position = "fixed";
+    textArea.style.left = "0";
+    textArea.style.top = "0";
+    textArea.style.width = "1px";
+    textArea.style.height = "1px";
+    textArea.style.padding = "0";
+    textArea.style.border = "none";
+    textArea.style.outline = "none";
+    textArea.style.boxShadow = "none";
+    textArea.style.background = "transparent";
+    
+    document.body.appendChild(textArea);
+    
+    // El orden de estos pasos es crítico para Android/iPhone
+    textArea.focus();
+    textArea.setSelectionRange(0, 99999); // Para móviles
+    textArea.select();
+
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            console.log('Texto copiado exitosamente con execCommand');
+            confirmarCopiado();
+        } else {
+            console.error('El comando copy devolvió false');
+            alert("Error: El navegador bloqueó el acceso al portapapeles.");
+        }
+    } catch (err) {
+        console.error('Error fatal en fallback:', err);
+    }
+
+    document.body.removeChild(textArea);
+}
+
+function confirmarCopiado() {
+    const btn = document.getElementById('btnCopiarHoja');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copiado!';
+    btn.style.background = '#2c6350';
+    setTimeout(() => { 
+        btn.innerHTML = orig; 
+        btn.style.background = '#25D366'; 
+    }, 2200);
 }
 
 $(document).ready(function() {

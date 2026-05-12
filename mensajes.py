@@ -46,6 +46,11 @@ TEXTOS = {
     "TIPO_JARDINES": "Mantenimiento/Limpieza",
     "BOTON_NUEVO_CLIENTE": "Registrar Nuevo Cliente/Proveedor",
     "AGENDAMIENTOS": "Agendamientos",
+    "ALERTA_FECHA": "Se debe definir la fecha del servicio!",
+    "ALERTA_SERVICIO": "Se debe definir el tipo de servicio!",
+    "ALERTA_UBICACION": "Se debe definir la ubicacion para el servicio!",
+    "ALERTA_CUADRILLA": "Se debe definir la cuadrilla asignada!",
+
 
 }
 

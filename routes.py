@@ -108,22 +108,16 @@ def init_routes(app):
     @app.route('/')
     @login_required
     def index():
-        # --- Datos para KPIs ---
-        # Contamos visitas agendadas para hoy
         hoy = datetime.now().date()
         visitas_hoy = Visita.query.filter_by(fecha=hoy).count()
-        
         equipos = ConfiguracionCuadrilla.query.count()
-        
         agenda_hoy = Visita.query.filter_by(fecha=hoy).order_by(Visita.hora).all()
-        # for v in agenda_hoy:
-        #     print(f"Visita ID {v.id} cuadrilla { v.config_cuadrilla.nombre_cuadrilla }")
-        
-        # --- Datos para el Gráfico (Chart.js) ---
         pendientes = db.session.query(db.func.sum(DetalleVisita.total)).filter(DetalleVisita.estado_pago == 'PENDIENTE').scalar() or 0
         pagado = db.session.query(db.func.sum(DetalleVisita.total)).filter(DetalleVisita.estado_pago == 'PAGADO').scalar() or 0
         datos_grafico = [float(pagado), float(pendientes)]
-        print(DetalleVisita.query.all())
+
+        for u in Ubicacion.query.all():
+            print(f"ID {u.id}: {u.nombre_sucursal} - URL: {u.coordenadas_url}") 
 
         return render_template('index.html', 
                             txt=TEXTOS, 
@@ -173,10 +167,8 @@ def init_routes(app):
     @login_required
     def clientes_guardar():
         """Solo procesa el envío del formulario."""
-        # Captura y limpia la lista de teléfonos enviada como array
         lista_telefonos = request.form.getlist('telefonos[]')
         telefonos_string = ", ".join([t.strip() for t in lista_telefonos if t.strip()])
-
         """Solo procesa el envío del formulario."""
         nuevo_c = Cliente(
             nombre=request.form.get('nombre'),
@@ -191,7 +183,6 @@ def init_routes(app):
         )
         db.session.add(nuevo_c)
         db.session.flush()
-        
         # Captura de todos los campos de ubicación
         nombres = request.form.getlist('ubi_nombre[]')
         urls = request.form.getlist('ubi_url[]')
@@ -199,16 +190,6 @@ def init_routes(app):
         barrios = request.form.getlist('ubi_barrio[]')
         calles = request.form.getlist('ubi_calle[]')
         grupos = request.form.getlist('ubi_grupo[]')
-
-        # for nombre, url in zip(nombres, urls):
-        #     if url.strip(): # Solo guardar si hay un link
-        #         ubi = Ubicacion(
-        #             cliente_id=nuevo_c.id, 
-        #             nombre_sucursal=nombre or "Principal", 
-        #             coordenadas_url=url
-        #         )
-        #         db.session.add(ubi)
-
         for data in zip(nombres, urls, ciudades, barrios, calles, grupos):
             nombre, url, ciudad, barrio, calle, grupo = data
             if url.strip() or nombre.strip(): # Guardar si tiene link o al menos un nombre
@@ -222,10 +203,55 @@ def init_routes(app):
                     grupo=grupo
                 )
                 db.session.add(ubi)
-
         db.session.commit()
         flash("Nuevo cliente/proveedor guardado exitosamente.", "success")
         return redirect(url_for('clientes'))
+
+    # @app.route('/clientes/editar/<int:id>', methods=['GET', 'POST'])
+    # @login_required
+    # def clientes_editar(id):
+    #     c = Cliente.query.get_or_404(id)
+        
+    #     if request.method == 'POST':
+    #         # Update fields
+    #         c.nombre = request.form.get('nombre')
+    #         c.cedula = request.form.get('cedula')
+    #         c.ruc = request.form.get('ruc')
+    #         # c.telefono = request.form.get('telefono')
+    #         # Captura la lista de teléfonos del formulario
+    #         lista_telefonos = request.form.getlist('telefonos[]')
+    #         # Filtra vacíos y une con comas
+    #         c.telefono = ", ".join([t.strip() for t in lista_telefonos if t.strip()])
+    #         c.email = request.form.get('email')
+    #         c.categoria_id = request.form.get('categoria_id')
+    #         c.tipo_contrato = request.form.get('tipo_contrato')
+    #         c.status = request.form.get('status')
+    #         c.observaciones_detalladas = request.form.get('observaciones')
+    #         Ubicacion.query.filter_by(cliente_id=c.id).delete()
+    #         nombres = request.form.getlist('ubi_nombre[]')
+    #         urls = request.form.getlist('ubi_url[]')
+    #         ciudades = request.form.getlist('ubi_ciudad[]')
+    #         barrios = request.form.getlist('ubi_barrio[]')
+    #         calles = request.form.getlist('ubi_calle[]')
+    #         grupos = request.form.getlist('ubi_grupo[]')
+    #         for data in zip(nombres, urls, ciudades, barrios, calles, grupos):
+    #             nombre, url, ciudad, barrio, calle, grupo = data
+    #             if url.strip() or nombre.strip():
+    #                 nueva_ubi = Ubicacion(
+    #                     cliente_id=c.id, 
+    #                     nombre_sucursal=nombre, 
+    #                     coordenadas_url=url,
+    #                     ciudad=ciudad,
+    #                     barrio=barrio,
+    #                     calle_principal=calle,
+    #                     grupo=grupo
+    #                 )
+    #                 db.session.add(nueva_ubi)
+    #         db.session.commit()
+    #         flash("Cliente actualizado correctamente", "success")
+    #         return redirect(url_for('clientes'))
+    #     categorias_list = Categoria.query.all()
+    #     return render_template('clientes_formulario.html', c=c, categorias=categorias_list)
 
     @app.route('/clientes/editar/<int:id>', methods=['GET', 'POST'])
     @login_required
@@ -233,24 +259,23 @@ def init_routes(app):
         c = Cliente.query.get_or_404(id)
         
         if request.method == 'POST':
-            # Update fields
+            # 1. Actualización de campos básicos del cliente
             c.nombre = request.form.get('nombre')
             c.cedula = request.form.get('cedula')
             c.ruc = request.form.get('ruc')
-            # c.telefono = request.form.get('telefono')
-            # Captura la lista de teléfonos del formulario
+            
             lista_telefonos = request.form.getlist('telefonos[]')
-            # Filtra vacíos y une con comas
             c.telefono = ", ".join([t.strip() for t in lista_telefonos if t.strip()])
+            
             c.email = request.form.get('email')
             c.categoria_id = request.form.get('categoria_id')
             c.tipo_contrato = request.form.get('tipo_contrato')
             c.status = request.form.get('status')
             c.observaciones_detalladas = request.form.get('observaciones')
-            
-            # Limpieza y actualización de ubicaciones
-            Ubicacion.query.filter_by(cliente_id=c.id).delete()
-            
+
+            # 2. GESTIÓN INTEGRAL DE UBICACIONES (Sin delete general)
+            # Capturamos todas las listas del formulario
+            ubi_ids = request.form.getlist('ubi_id[]') # ¡Asegúrate de agregar este hidden en el HTML!
             nombres = request.form.getlist('ubi_nombre[]')
             urls = request.form.getlist('ubi_url[]')
             ciudades = request.form.getlist('ubi_ciudad[]')
@@ -258,25 +283,47 @@ def init_routes(app):
             calles = request.form.getlist('ubi_calle[]')
             grupos = request.form.getlist('ubi_grupo[]')
 
-            for data in zip(nombres, urls, ciudades, barrios, calles, grupos):
-                nombre, url, ciudad, barrio, calle, grupo = data
+            # Mapeamos las ubicaciones actuales para comparar
+            ubicaciones_actuales = {u.id: u for u in c.ubicaciones}
+            ids_enviados = [int(i) for i in ubi_ids if i]
+
+            # A. Eliminar solo las que el usuario quitó manualmente en la UI
+            for old_id, ubi_obj in ubicaciones_actuales.items():
+                if old_id not in ids_enviados:
+                    db.session.delete(ubi_obj)
+
+            # B. Procesar actualizaciones y nuevas inserciones
+            for data in zip(ubi_ids, nombres, urls, ciudades, barrios, calles, grupos):
+                u_id, nombre, url, ciudad, barrio, calle, grupo = data
+                
+                # Solo procesar si hay datos mínimos
                 if url.strip() or nombre.strip():
-                    nueva_ubi = Ubicacion(
-                        cliente_id=c.id, 
-                        nombre_sucursal=nombre, 
-                        coordenadas_url=url,
-                        ciudad=ciudad,
-                        barrio=barrio,
-                        calle_principal=calle,
-                        grupo=grupo
-                    )
-                    db.session.add(nueva_ubi)
-            
+                    if u_id and int(u_id) in ubicaciones_actuales:
+                        # ACTUALIZAR: El ID ya existe, modificamos el objeto sin borrarlo
+                        ubi = ubicaciones_actuales[int(u_id)]
+                        ubi.nombre_sucursal = nombre
+                        ubi.coordenadas_url = url
+                        ubi.ciudad = ciudad
+                        ubi.barrio = barrio
+                        ubi.calle_principal = calle
+                        ubi.grupo = grupo
+                    else:
+                        # INSERTAR: Es una ubicación nueva (no tiene ID previo)
+                        nueva_ubi = Ubicacion(
+                            cliente_id=c.id, 
+                            nombre_sucursal=nombre, 
+                            coordenadas_url=url,
+                            ciudad=ciudad,
+                            barrio=barrio,
+                            calle_principal=calle,
+                            grupo=grupo
+                        )
+                        db.session.add(nueva_ubi)
+
             db.session.commit()
-            flash("Cliente actualizado correctamente", "success")
+            flash("Cliente y ubicaciones actualizados correctamente", "success")
             return redirect(url_for('clientes'))
 
-        # GET: Show the same form but pre-filled
         categorias_list = Categoria.query.all()
         return render_template('clientes_formulario.html', c=c, categorias=categorias_list)
     
@@ -284,11 +331,8 @@ def init_routes(app):
     @login_required
     def clientes_eliminar(id):
         c = Cliente.query.get_or_404(id)
-        
-        # Opcional: Eliminar primero las ubicaciones relacionadas si no tienes delete cascade
         from models import Ubicacion
         Ubicacion.query.filter_by(cliente_id=c.id).delete()
-        
         db.session.delete(c)
         db.session.commit()
         flash(f"Cliente {c.nombre} eliminado.", "success")
@@ -311,7 +355,6 @@ def init_routes(app):
     @admin_required
     def categoria_eliminar(id):
         cat = Categoria.query.get_or_404(id)
-        # Check if category is in use
         if cat.clientes:
             flash("No se puede eliminar: existen clientes usando esta categoría", "danger")
         else:
@@ -320,50 +363,44 @@ def init_routes(app):
             flash("Categoría eliminada", "success")
         return redirect(url_for('clientes'))
 
-
 # AGENDAMIENTOS MODULE
     @app.route('/agendamientos')
     @login_required
     def agendamientos():
-        from datetime import date, timedelta
-        import json
-        from collections import defaultdict  # <--- IMPORTANTE: Faltaba esto
-
+        # from datetime import date, timedelta
+        # import json
+        # from collections import defaultdict  # <--- IMPORTANTE: Faltaba esto
         hoy = date.today()
-        
-        # 1. Datos Maestros
         cuadrillas = ConfiguracionCuadrilla.query.all()
         vehiculos = Vehiculo.query.all()
         clientes = Cliente.query.order_by(Cliente.nombre).all()
-
-        # 2. Visitas (Nota: Asegúrate que la migración de cuadrilla_id se aplicó)
         visitas = Visita.query.filter(
             Visita.fecha >= hoy,
             Visita.estado != 'CANCELADO'
-        ).order_by(Visita.fecha.asc()).all()
-
-        # 3. Feriados (Asunción, PY)
+        ).order_by(Visita.fecha.asc(), Visita.hora_sugerida.asc()).all()
         feriados = Feriado.query.all()
         feriados_list = [f.fecha.strftime('%Y-%m-%d') for f in feriados if f.no_laboral]
-
-        # 4. Lógica de Agrupación por Semanas
-        # Usamos defaultdict para no tener errores de llave no encontrada
         semanas = defaultdict(lambda: defaultdict(list))
-        
         for v in visitas:
             # Calculamos el lunes de esa semana
             week_monday = v.fecha - timedelta(days=v.fecha.weekday())
             semanas[week_monday][v.fecha].append(v)
-
-        # 5. Transformación a lista ordenada para el Template
-        # Retorna: (Inicio_Semana, Fin_Semana, {Fecha: [Visitas]})
+        # semanas_lista = [
+        #     (wk, wk + timedelta(days=5), dict(sorted(dias.items())))
+        #     for wk, dias in sorted(semanas.items())
+        # ]
         semanas_lista = [
-            (wk, wk + timedelta(days=5), dict(sorted(dias.items())))
+            (
+                wk, 
+                wk + timedelta(days=5), 
+                {
+                    dia: sorted(visitas_dia, key=lambda x: x.hora_sugerida if x.hora_sugerida else time(0,0))
+                    for dia, visitas_dia in sorted(dias.items())
+                }
+            )
             for wk, dias in sorted(semanas.items())
         ]
-
         DIAS_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-
         return render_template('agendamientos.html',
                                 cuadrillas=cuadrillas,
                                 visitas=visitas,
@@ -378,20 +415,14 @@ def init_routes(app):
     @login_required
     def generar_visitas_semana():
         today = date.today()
-
-        # ── Always generate the week AFTER the latest existing visita ────────────
         ultima_visita = Visita.query.order_by(Visita.fecha.desc()).first()
         if ultima_visita:
             ref = ultima_visita.fecha
         else:
             ref = today
-
-        # Find that reference date's Monday, then jump one full week ahead
         monday_of_ref = ref - timedelta(days=ref.weekday())
         next_monday   = monday_of_ref + timedelta(weeks=1)
         next_saturday = next_monday + timedelta(days=5)
-
-        # ── Feriados in that window ───────────────────────────────────────────────
         feriados_en_semana = {
             f.fecha for f in Feriado.query.filter(
                 Feriado.fecha >= next_monday,
@@ -399,38 +430,22 @@ def init_routes(app):
                 Feriado.no_laboral == True
             ).all()
         }
-
         recurrencias = Recurrencia.query.filter_by(activo=True).all()
         generadas = omitidas = bloqueadas = 0
-
         for r in recurrencias:
-
-            # ── Build the exact list of (day_index) slots to generate ────────────
             dias_a_generar = [r.dia_semana]
-
             if r.frecuencia == 'SEMANAL_2X' and r.segundo_dia is not None:
                 segundo = int(r.segundo_dia)
-                # Only add it if it's a valid workday AND different from the main day
                 if 0 <= segundo <= 5 and segundo != r.dia_semana:
                     dias_a_generar.append(segundo)
-                # If segundo_dia is invalid or same as main, log and skip silently
-                # (don't drop the whole rule, just the second slot)
-
             for dia_idx in dias_a_generar:
-
-                # Validate range — skip without clamping so we don't corrupt dates
                 if not (0 <= dia_idx <= 5):
                     omitidas += 1
                     continue
-
                 target_date = next_monday + timedelta(days=dia_idx)
-
-                # Skip feriados
                 if target_date in feriados_en_semana:
                     bloqueadas += 1
                     continue
-
-                # Frequency gate — only on the MAIN day slot
                 if dia_idx == r.dia_semana:
                     if r.frecuencia == 'QUINCENAL' and r.ultimo_generado:
                         if (target_date - r.ultimo_generado).days < 14:
@@ -440,8 +455,6 @@ def init_routes(app):
                         if (target_date - r.ultimo_generado).days < 28:
                             omitidas += 1
                             continue
-
-                # Duplicate guard — exact recurrencia + date combo
                 ya_existe = Visita.query.filter_by(
                     recurrencia_id=r.id,
                     fecha=target_date
@@ -449,7 +462,6 @@ def init_routes(app):
                 if ya_existe:
                     omitidas += 1
                     continue
-
                 nueva = Visita(
                     cliente_id     = r.cliente_id,
                     ubicacion_id   = r.ubicacion_id,
@@ -464,11 +476,8 @@ def init_routes(app):
                 db.session.add(nueva)
                 r.ultimo_generado = target_date
                 generadas += 1
-
         db.session.commit()
-
         semana_str = f"{next_monday.strftime('%d/%m')} – {next_saturday.strftime('%d/%m/%Y')}"
-
         if generadas > 0:
             flash(
                 f"✔ {generadas} visita(s) generadas para {semana_str}. "
@@ -481,48 +490,37 @@ def init_routes(app):
                 f"{omitidas} ya existían o no correspondían · {bloqueadas} por feriado (se debe agendar manualmente).",
                 'warning'
             )
-
         return redirect(url_for('agendamientos'))
-
 
     @app.route('/operaciones/historico')
     @login_required
     def historico_visitas():
-        # Cargamos visitas con sus relaciones para evitar múltiples consultas a la DB
         todas_las_visitas = Visita.query.options(
             joinedload(Visita.cliente),
             joinedload(Visita.detalles)
         ).order_by(Visita.fecha.desc()).all()
-        
-        # Agrupamos por cliente
         agrupados = {}
         for v in todas_las_visitas:
             cliente_nom = v.cliente.nombre if v.cliente else "SIN CLIENTE"
             if cliente_nom not in agrupados:
                 agrupados[cliente_nom] = []
             agrupados[cliente_nom].append(v)
-
         cuadrillas = ConfiguracionCuadrilla.query.all()
-
         return render_template('agendamientos_historico.html', agrupados=agrupados, cuadrillas=cuadrillas)
 
     @app.route('/crear-recurrencia', methods=['POST'])
     @login_required
     def crear_recurrencia():
-        # 1. Capturar datos del formulario modal
         cliente_id = request.form.get('cliente_id')
         ubicacion_id = request.form.get('ubicacion_id')
         cuadrilla_id = request.form.get('cuadrilla_id')
         dia_semana = int(request.form.get('dia_semana'))
         servicio_elegido = request.form.get('servicio').upper() # Captura la elección manual del modal
-        
         hora_str = request.form.get('hora_sugerida')
         hora_obj = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
-
         frecuencia = request.form.get('frecuencia')
         dia1 = int(request.form.get('dia_semana'))  
         segundo_dia = request.form.get('segundo_dia')
-
         try:
             nueva_regla = Recurrencia(
                 cliente_id=cliente_id,
@@ -537,13 +535,8 @@ def init_routes(app):
             )
             db.session.add(nueva_regla)
             db.session.flush() # Genera el ID para la visita
-
-            # 3. Calcular la primera visita basada en el día de la semana elegido
             hoy = date.today()
-            # dias_faltantes = (dia_semana - hoy.weekday() + 7) % 7
-
             proxima_fecha = calcular_proximo_dia(date.today(), dia1)
-            
             nueva_visita1 = Visita(
                 cliente_id=cliente_id,
                 ubicacion_id=ubicacion_id,
@@ -555,8 +548,6 @@ def init_routes(app):
                 recurrencia_id=nueva_regla.id
             )
             db.session.add(nueva_visita1)
-            
-            # Si es 2x semana, generamos la segunda visita de la misma semana
             if frecuencia == 'SEMANAL_2X':
                 dia_secundario = int(request.form.get('segundo_dia'))
                 fecha_v2 = calcular_proximo_dia(date.today(), dia_secundario)
@@ -576,14 +567,11 @@ def init_routes(app):
                     recurrencia_id=nueva_regla.id
                 )
                 db.session.add(nueva_visita2)
-
             db.session.commit()
             flash('Programación semanal creada con éxito', 'success')
-            
         except Exception as e:
             db.session.rollback()
             flash(f'Error al crear programación: {str(e)}', 'danger')
-
         return redirect(url_for('agendamientos'))    
     
     @app.route('/agendamientos/eliminar/<int:id>', methods=['POST'])
@@ -597,14 +585,11 @@ def init_routes(app):
         except Exception as e:
             db.session.rollback()
             flash(f"Error al eliminar la visita: {str(e)}", "danger")
-        
         return redirect(url_for('agendamientos'))
     
     @app.route('/recurrencias')
     @login_required
     def lista_recurrencias():
-        # Obtenemos todas las recurrencias activas con los datos del cliente y ubicación
-        # todas_recurrencias = Recurrencia.query.filter_by(activo=True).all()
         todas_recurrencias = Recurrencia.query.filter_by(activo=True)\
             .options(joinedload(Recurrencia.config_cuadrilla))\
             .all()
@@ -615,14 +600,12 @@ def init_routes(app):
     def eliminar_recurrencia(id):
         regla = Recurrencia.query.get_or_404(id)
         try:
-            # En lugar de borrar (delete), podemos desactivarla para mantener historial
             regla.activo = False 
             db.session.commit()
             flash("Programación recurrente desactivada con éxito.", "success")
         except Exception as e:
             db.session.rollback()
             flash(f"Error al eliminar: {str(e)}", "danger")
-        
         return redirect(url_for('lista_recurrencias'))
     
     @app.route('/crear-visita-esporadica', methods=['POST'])
@@ -635,18 +618,11 @@ def init_routes(app):
         servicio = request.form.get('servicio').upper()
         hora_str = request.form.get('hora_sugerida')
         obs_str= request.form.get('observaciones', '').strip()
-
-        # cuadrilla = request.form.get('cuadrilla')
-
-        # Buscar si existe un vehículo asignado por defecto a esa cuadrilla
         config = ConfiguracionCuadrilla.query.filter_by(nombre_cuadrilla=str(cuadrilla_id)).first()
         v_id = config.vehiculo_default_id if config else None
-
         try:
-            # Convertimos el string de la fecha a objeto date
             fecha_obj = date.fromisoformat(fecha_str)
             hora_obj = datetime.strptime(hora_str, '%H:%M').time() if hora_str else None
-            
             nueva_visita = Visita(
                 cliente_id=cliente_id,
                 ubicacion_id=ubicacion_id,
@@ -666,64 +642,47 @@ def init_routes(app):
         except Exception as e:
             db.session.rollback()
             flash(f'Error al crear visita: {str(e)}', 'danger')
-
         return redirect(url_for('agendamientos'))
-    
-   # Ruta para guardar la configuración de defaults
 
     @app.route('/visita/reagendar/<int:id>', methods=['POST'])
     @login_required
     def reagendar_visita(id):
         visita = Visita.query.get_or_404(id)
         try:
-            # Actualizamos los campos con los nuevos datos del modal
             visita.fecha = date.fromisoformat(request.form.get('fecha'))
             visita.cuadrilla_id = request.form.get('cuadrilla_id')
             visita.servicio = request.form.get('servicio').upper()
             visita.observaciones = request.form.get('observaciones')
-
-            # Opcional: Si agregaste el campo hora_sugerida
             hora_str = request.form.get('hora_sugerida')
             if hora_str:
                 visita.hora_sugerida = datetime.strptime(hora_str, '%H:%M').time()
-
             visita.estado = 'PENDIENTE' # Al reagendar, vuelve a estar pendiente
             db.session.commit()
             flash("Visita reprogramada exitosamente", "success")
         except Exception as e:
             db.session.rollback()
             flash(f"Error al reagendar: {str(e)}", "danger")
-        
         return redirect(url_for('agendamientos'))
     
     @app.route('/visita/guardar-facturacion', methods=['POST'])
     @login_required
     def guardar_facturacion():
-        # 1. Obtener datos principales
         visita_id = request.form.get('visita_id')
         descripciones = request.form.getlist('desc[]')
         cantidades = request.form.getlist('cant[]')
         precios = request.form.getlist('precio[]')
         estados_pago = request.form.getlist('pago_estado[]')
         metodos_pago = request.form.getlist('metodo_pago_item[]')
-
         visita = Visita.query.get_or_404(visita_id)
-        
         try:
-            # 2. Limpiar detalles previos si existen (evita duplicados en re-edición)
             DetalleVisita.query.filter_by(visita_id=visita_id).delete()
-            
-            # 3. Procesar cada ítem del formulario
             for i in range(len(descripciones)):
-                # Validar que la descripción no esté vacía
                 if not descripciones[i].strip():
                     continue
-                    
                 try:
                     qty = float(cantidades[i]) if cantidades[i] else 1.0
                     price = int(precios[i]) if precios[i] else 0
                     subtotal = int(qty * price)
-                    
                     nuevo_detalle = DetalleVisita(
                         visita_id=visita_id,
                         descripcion=descripciones[i].upper(),
@@ -731,24 +690,18 @@ def init_routes(app):
                         precio_unitario=price,
                         total=subtotal,
                         estado_pago=estados_pago[i], # 'PENDIENTE' o 'PAGADO'
-                        # Si el estado es PAGADO, elegir el metodo de pago; si es PENDIENTE, dejarlo en None
                         metodo_pago=metodos_pago[i] if estados_pago[i] == 'PAGADO' else None,
                         date_finished=datetime.now() if estados_pago[i] == 'PAGADO' else None
                     )
                     db.session.add(nuevo_detalle)
                 except ValueError:
                     continue # Saltar filas con datos numéricos corruptos
-
-            # 4. Actualizar estado de la visita
             visita.estado = 'COMPLETADO'
             db.session.commit()
-            
             flash(f"Facturación de {visita.cliente.nombre} guardada correctamente.", "success")
-            
         except Exception as e:
             db.session.rollback()
             flash(f"Error al procesar la facturación: {str(e)}", "danger")
-            
         return redirect(url_for('agendamientos'))
     
     @app.route('/gestion/vehiculo/guardar', methods=['POST'])
@@ -758,7 +711,6 @@ def init_routes(app):
         denominacion = request.form.get('denominacion').upper()
         chapa = request.form.get('chapa').upper()
         tipo = request.form.get('tipo')
-
         if v_id: # Editar
             v = Vehiculo.query.get(v_id)
             v.denominacion = denominacion
@@ -767,7 +719,6 @@ def init_routes(app):
         else: # Nuevo
             nuevo = Vehiculo(denominacion=denominacion, chapa=chapa, tipo=tipo)
             db.session.add(nuevo)
-        
         db.session.commit()
         return redirect(url_for('gestion_personal'))
 
@@ -775,7 +726,6 @@ def init_routes(app):
     @login_required
     def eliminar_vehiculo(id):
         v = Vehiculo.query.get_or_404(id)
-        # Opcional: Verificar si tiene visitas asociadas antes de borrar
         db.session.delete(v)
         db.session.commit()
         return redirect(url_for('gestion_personal'))
@@ -787,8 +737,7 @@ def init_routes(app):
         usuarios = User.query.all()
         feriados = Feriado.query.order_by(Feriado.fecha.asc()).all() # Añadir esto
         return render_template('ajustes.html', usuarios=usuarios, feriados=feriados)
-    
-    # --- FERIADOS ---
+
     @app.route('/ajustes/feriado/guardar', methods=['POST'])
     @login_required
     @admin_required
@@ -797,10 +746,7 @@ def init_routes(app):
         fecha_str = request.form.get('fecha')
         descripcion = request.form.get('descripcion').upper()
         no_laboral = True if request.form.get('no_laboral') else False
-        
-        
         fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-        
         if id_feriado:
             f = Feriado.query.get(id_feriado)
             f.no_laboral = no_laboral
@@ -809,7 +755,6 @@ def init_routes(app):
         else: # Nuevo feriado
             nuevo_f = Feriado(fecha=fecha_obj, descripcion=descripcion)
             db.session.add(nuevo_f)
-        
         db.session.commit()
         flash("Feriado actualizado", "success")
         return redirect(url_for('parametrico'))
@@ -830,8 +775,6 @@ def init_routes(app):
     def facturacion():
         filtro = request.args.get('filtro', 'todo')
         query = DetalleVisita.query.join(Visita)
-        
-        # --- APLICAR FILTROS ---
         today = datetime.today()
         if filtro == 'mes':
             query = query.filter(extract('month', DetalleVisita.date_created) == today.month,
@@ -840,27 +783,19 @@ def init_routes(app):
             query = query.filter(extract('year', DetalleVisita.date_created) == today.year)
         elif filtro == 'pendientes':
             query = query.filter(DetalleVisita.estado_pago == 'PENDIENTE')
-
         detalles = query.all()
-
-        # --- AGRUPAR POR CLIENTE ---
-        # Dentro de def facturacion():
         agrupados = {}
         total_deuda_global = 0      
         total_cobrado_periodo = 0   
-
         for d in detalles:
             c_id = d.visita.cliente_id
             v_id = d.visita.id
-            
             if c_id not in agrupados:
                 agrupados[c_id] = {
                     'cliente_nombre': d.visita.cliente.nombre,
                     'visitas': {}, # Cambiamos registros por un dict de visitas
                     'deuda_total': 0
                 }
-            
-            # Dentro de la lógica de agrupación en routes.py
             if v_id not in agrupados[c_id]['visitas']:
                 agrupados[c_id]['visitas'][v_id] = {
                     'fecha': d.visita.fecha,
@@ -869,19 +804,14 @@ def init_routes(app):
                     'total_visita': 0,
                     'pendiente_visita': 0
                 }
-
             agrupados[c_id]['visitas'][v_id]['detalles_items'].append(d) # CAMBIADO AQUÍ TAMBIÉN
-            
-            # agrupados[c_id]['visitas'][v_id]['items'].append(d)
             agrupados[c_id]['visitas'][v_id]['total_visita'] += d.total
-            
             if d.estado_pago == 'PENDIENTE':
                 agrupados[c_id]['visitas'][v_id]['pendiente_visita'] += d.total
                 agrupados[c_id]['deuda_total'] += d.total
                 total_deuda_global += d.total
             else:
                 total_cobrado_periodo += d.total
-
         return render_template('facturacion.html', 
                             agrupados_por_cliente=agrupados, 
                             total_deuda_global=total_deuda_global,
@@ -891,17 +821,13 @@ def init_routes(app):
     @app.route('/gestion/personal')
     @login_required
     def gestion_personal():
-
         vehiculos = Vehiculo.query.all()
-        
         staff = Personal.query.all()
         vehiculos = Vehiculo.query.all()
         # cuadrillas = ConfiguracionCuadrilla.query.all()
         cuadrillas = ConfiguracionCuadrilla.query.options(
                 joinedload(ConfiguracionCuadrilla.vehiculo_default)
             ).all()
-        
-        # Diccionario de listas: { id_vehiculo: ["Cuadrilla A", "Cuadrilla B"] }
         asignaciones = {}
         for c in cuadrillas:
             if c.vehiculo_default:
@@ -909,7 +835,6 @@ def init_routes(app):
                 if v_id not in asignaciones:
                     asignaciones[v_id] = []
                 asignaciones[v_id].append(c.nombre_cuadrilla)
-
         return render_template('personal.html', 
                             staff=staff, 
                             vehiculos=vehiculos, 
@@ -924,14 +849,12 @@ def init_routes(app):
         rol = request.form.get('rol')
         conductor = True if request.form.get('es_conductor') else False
         sueldo = int(request.form.get('sueldo', 0))
-
         if p_id:
             p = Personal.query.get(p_id)
             p.nombre, p.rol, p.es_conductor, p.sueldo_base = nombre, rol, conductor, sueldo
         else:
             nuevo = Personal(nombre=nombre, rol=rol, es_conductor=conductor, sueldo_base=sueldo)
             db.session.add(nuevo)
-        
         db.session.commit()
         return redirect(url_for('gestion_personal'))
     
@@ -941,22 +864,14 @@ def init_routes(app):
         id_cuadrilla = request.form.get('cuadrilla_id')
         nombre = request.form.get('nombre_cuadrilla')
         id_vehiculo = request.form.get('vehiculo_id')
-        
-        # Obtenemos la lista de IDs seleccionados en el select múltiple
         ids_personal = request.form.getlist('personal_ids') # Retorna lista de IDs ['1', '5']
-
         if id_cuadrilla:
             cuadrilla = ConfiguracionCuadrilla.query.get(id_cuadrilla)
         else:
             cuadrilla = ConfiguracionCuadrilla()
-
         cuadrilla.nombre_cuadrilla = nombre
         cuadrilla.vehiculo_default_id = id_vehiculo
-        
-        # Sincronizamos los integrantes
-        # Buscamos los objetos Personal correspondientes a los IDs recibidos
         cuadrilla.integrantes = Personal.query.filter(Personal.id.in_(ids_personal)).all()
-
         db.session.add(cuadrilla)
         db.session.commit()
         return redirect(url_for('gestion_personal'))
@@ -971,51 +886,26 @@ def init_routes(app):
     @app.route('/gestion/remover-miembro/<int:cuadrilla_id>/<int:personal_id>')
     @login_required
     def remover_miembro(cuadrilla_id, personal_id):
-        # Localizamos la cuadrilla y el miembro del staff
         cuadrilla = ConfiguracionCuadrilla.query.get_or_404(cuadrilla_id)
         miembro = Personal.query.get_or_404(personal_id)
-        
-        # Si el miembro pertenece a la cuadrilla, lo removemos de la lista
         if miembro in cuadrilla.integrantes:
             cuadrilla.integrantes.remove(miembro)
             db.session.commit()
-            
         return redirect(url_for('gestion_personal'))
     
     @app.route('/gestion/configurar-cuadrilla', methods=['POST'])
-    # @login_required
-    # def configurar_cuadrilla():
-    #     nombre = request.form.get('nombre_cuadrilla')
-    #     v_id = request.form.get('vehiculo_id')
-        
-    #     config = ConfiguracionCuadrilla.query.filter_by(nombre_cuadrilla=nombre).first()
-    #     if not config:
-    #         config = ConfiguracionCuadrilla(nombre_cuadrilla=nombre)
-    #         db.session.add(config)
-        
-    #     config.vehiculo_default_id = v_id
-    #     db.session.commit()
-    #     flash(f"Vehículo predeterminado para {nombre} actualizado.", "success")
-    #     return redirect(url_for('gestion_personal')) 
     @login_required
     def configurar_cuadrilla():
-        # Obtenemos los IDs del formulario
         cuadrilla_id = request.form.get('cuadrilla_id')
         vehiculo_id = request.form.get('vehiculo_id')
-
         if not cuadrilla_id or not vehiculo_id:
             flash("Por favor, seleccione ambos campos.", "warning")
             return redirect(url_for('gestion_personal'))
-
-        # Buscamos la cuadrilla en la base de datos
         cuadrilla = ConfiguracionCuadrilla.query.get(cuadrilla_id)
-        
         if cuadrilla:
-            # Actualizamos el vehículo asignado por defecto
             cuadrilla.vehiculo_default_id = vehiculo_id
             db.session.commit()
             flash(f"Logística de {cuadrilla.nombre_cuadrilla} actualizada.", "success")
-        
         return redirect(url_for('gestion_personal'))
 
     
@@ -1045,7 +935,6 @@ def init_routes(app):
         # Permite cambiar el servicio directamente desde la tabla de 7 días
         data = request.get_json()
         visita = Visita.query.get(data.get('visita_id'))
-        
         if visita:
             visita.servicio = data.get('nuevo_servicio')
             db.session.commit()
@@ -1063,31 +952,25 @@ def init_routes(app):
     @login_required
     def cobrar_cliente(cliente_id):
         data = request.json
-        # Buscamos todos los detalles pendientes de este cliente a través de sus visitas
         pendientes = DetalleVisita.query.join(Visita).filter(
             Visita.cliente_id == cliente_id,
             DetalleVisita.estado_pago == 'PENDIENTE'
         ).all()
-        
         for item in pendientes:
             item.estado_pago = 'PAGADO'
             item.metodo_pago = data.get('metodo', 'EFECTIVO')
             item.date_finished = datetime.now()
-            
         db.session.commit()
         return jsonify({"status": "success", "items_cobrados": len(pendientes)})
     
-    # En el endpoint de actualizar_pago_item
     @app.route('/api/facturacion/actualizar-pago-item/<int:id>', methods=['POST'])
     @login_required
     def actualizar_pago_item(id):
         detalle = DetalleVisita.query.get_or_404(id)
         data = request.get_json()
-        
         detalle.estado_pago = 'PAGADO'
         detalle.metodo_pago = data.get('metodo', 'EFECTIVO')
         detalle.date_finished = datetime.now() # Guardamos la fecha de hoy
-        
         db.session.commit()
         return jsonify({"status": "success"})
 
@@ -1096,15 +979,11 @@ def init_routes(app):
     def cobrar_visita(visita_id):
         data = request.get_json()
         metodo = data.get('metodo', 'EFECTIVO')
-        
-        # Buscamos todos los ítems pendientes de esta visita específica
         detalles = DetalleVisita.query.filter_by(visita_id=visita_id, estado_pago='PENDIENTE').all()
-        
         for d in detalles:
             d.estado_pago = 'PAGADO'
             d.metodo_pago = metodo
             d.date_finished = datetime.now()
-            
         db.session.commit()
         return jsonify({"status": "success", "count": len(detalles)})
     
@@ -1115,15 +994,12 @@ def init_routes(app):
         visita_id = data.get('visita_id')
         nuevo_estado = data.get('nuevo_estado').upper()
         observaciones = data.get('observaciones', '').strip()
-
         if nuevo_estado == 'NO ASISTIO' and not observaciones:
             return jsonify({
                 'status': 'error', 
                 'message': 'Debe ingresar una observación para marcar como No Asistió.'
             }), 400
-        
         visita = Visita.query.get_or_404(visita_id)
-        
         try:
             visita.estado = nuevo_estado
             visita.observaciones = observaciones
@@ -1136,10 +1012,6 @@ def init_routes(app):
     @app.route('/api/cliente-detalle/<int:id>')
     @login_required
     def api_cliente_detalle(id):
-        """
-        Ruta auxiliar para obtener el precio base del contrato del cliente
-        al abrir el modal de facturación.
-        """
         cliente = Cliente.query.get_or_404(id)
         return jsonify({
             'nombre': cliente.nombre,

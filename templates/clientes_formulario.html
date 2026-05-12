@@ -122,6 +122,9 @@
             {% if c and c.ubicaciones %}
                 {% for ubi in c.ubicaciones %}
                 <div class="ubicacion-row border rounded p-3 mb-3 bg-white shadow-sm">
+
+                    <input type="hidden" name="ubi_id[]" value="{{ ubi.id }}">
+                    
                     <div class="row mb-2">
                         <div class="col-md-5">
                             <label class="x-small font-weight-bold text-muted">NOMBRE DE SEDE</label>
@@ -245,6 +248,8 @@
         const newRow = document.createElement('div');
         newRow.className = 'ubicacion-row border rounded p-3 mb-3 bg-white shadow-sm';
         newRow.innerHTML = `
+            <input type="hidden" name="ubi_id[]" value="">
+            
             <div class="row mb-2">
                 <div class="col-md-5">
                     <label class="x-small font-weight-bold text-muted">NOMBRE DE SEDE</label>

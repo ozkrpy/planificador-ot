@@ -119,7 +119,26 @@
                                     </td>
                                     <td><span class="badge badge-light border">{{ item.config_cuadrilla.nombre_cuadrilla }}</span></td>
                                     <td class="text-right">
-                                        <button class="btn btn-sm btn-outline-dark"><i class="fa-solid fa-eye"></i></button>
+                                        {% set mv_data = {
+                                            "fecha": item.fecha.strftime('%d/%m/%Y'),
+                                            "hora": item.hora.strftime('%H:%M') if item.hora else 'S/H',
+                                            "estado": item.estado,
+                                            "cliente": item.cliente.nombre | upper,
+                                            "sucursal": item.ubicacion.nombre_sucursal if item.ubicacion else 'Principal',
+                                            "direccion": (item.ubicacion.ciudad if item.ubicacion else '') ~ ' - ' ~ (item.ubicacion.barrio if item.ubicacion else ''),
+                                            "calles": (item.ubicacion.calle_principal if item.ubicacion else '') ~ ' - ' ~ (item.ubicacion.calle_secundaria if item.ubicacion else ''),
+                                            "servicio": item.servicio,
+                                            "cuadrilla": item.config_cuadrilla.nombre_cuadrilla if item.config_cuadrilla else 'SIN ASIGNAR',
+                                            "observaciones": item.observaciones or 'Sin observaciones adicionales',
+                                            "vehiculo": (item.config_cuadrilla.vehiculo_default.denominacion if item.config_cuadrilla and item.config_cuadrilla.vehiculo_default else 'N/A'),
+                                            "chapa": (item.config_cuadrilla.vehiculo_default.chapa if item.config_cuadrilla and item.config_cuadrilla.vehiculo_default else ''),
+                                            "maps": item.ubicacion.coordenadas_url if item.ubicacion else ''
+                                        } %}
+                                        <button class="btn btn-xs btn-outline-primary btn-ver-visita" 
+                                                data-payload='{{ mv_data | tojson | e }}'
+                                                title="Ver Detalle Completo">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -168,6 +187,79 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="modalDetalleVisita" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title text-dark-green font-weight-bold">
+                    <i class="fa-solid fa-circle-info mr-2"></i>DETALLE DEL CLIENTE Y SERVICIO
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="px-4 py-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge badge-day px-3 py-2" id="mv_fecha_display"></span>
+                        <span class="font-weight-bold ml-2 text-primary" id="mv_hora_display"></span>
+                    </div>
+                    <span class="badge" id="mv_estado_badge"></span>
+                </div>
+
+                <div class="row no-gutters">
+                    <div class="col-md-5 border-right bg-light p-4">
+                        <h6 class="header-subtitle mb-3">Datos del Cliente</h6>
+                        <div class="mb-3">
+                            <label class="x-small text-muted mb-0">Razón Social / Nombre</label>
+                            <div class="font-weight-bold h6 text-dark" id="mv_cliente_nombre"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="x-small text-muted mb-0">Sucursal / Ubicación</label>
+                            <div class="small font-weight-bold" id="mv_sucursal_nombre"></div>
+                            <div class="x-small text-muted" id="mv_direccion_full"></div>
+                            <div class="x-small text-muted" id="mv_calles"></div>
+                        </div>
+                        <div id="mv_maps_container">
+                            </div>
+                    </div>
+
+                    <div class="col-md-7 p-4 bg-white">
+                        <h6 class="header-subtitle mb-3">Detalles del Servicio</h6>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="x-small text-muted mb-0">Tipo de Servicio</label>
+                                <div class="badge badge-success-soft d-block text-left" id="mv_servicio_tipo"></div>
+                            </div>
+                            <div class="col-6">
+                                <label class="x-small text-muted mb-0">Cuadrilla Asignada</label>
+                                <div class="font-weight-bold small text-uppercase" id="mv_cuadrilla_nombre"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group bg-light p-2 rounded">
+                            <label class="x-small text-muted">Observaciones de Campo</label>
+                            <p class="small mb-0 italic" id="mv_observaciones_text"></p>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top">
+                            <h6 class="header-subtitle mb-2">Vehículo y Logística</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-truck-pickup fa-2x text-muted mr-3 opacity-50"></i>
+                                <div>
+                                    <div class="small font-weight-bold" id="mv_vehiculo_denominacion"></div>
+                                    <div class="x-small text-muted" id="mv_vehiculo_chapa"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -193,6 +285,44 @@
                 animation: { animateScale: true }
             }
         });
+    });
+
+    $(document).on('click', '.btn-ver-visita', function() {
+        const data = JSON.parse($(this).attr('data-payload'));
+        
+        // Mapeo de texto simple
+        $('#mv_fecha_display').text(data.fecha);
+        $('#mv_hora_display').text(data.hora + ' HS');
+        $('#mv_cliente_nombre').text(data.cliente);
+        $('#mv_sucursal_nombre').text(data.sucursal);
+        $('#mv_direccion_full').text(data.direccion);
+        $('#mv_calles').text(data.calles);
+        $('#mv_servicio_tipo').text(data.servicio);
+        $('#mv_cuadrilla_nombre').text(data.cuadrilla);
+        $('#mv_observaciones_text').text(data.observaciones);
+        $('#mv_vehiculo_denominacion').text(data.vehiculo);
+        $('#mv_vehiculo_chapa').text(data.chapa);
+
+        // Badge de Estado dinámico
+        const badge = $('#mv_estado_badge');
+        badge.text(data.estado).removeClass().addClass('badge px-3 py-2');
+        if (data.estado === 'COMPLETADO') badge.addClass('badge-success-soft text-success');
+        else if (data.estado === 'PENDIENTE') badge.addClass('badge-warning-soft text-warning');
+        else badge.addClass('badge-secondary-soft text-muted');
+
+        // Botón de Google Maps
+        const mapsContainer = $('#mv_maps_container');
+        if (data.maps) {
+            mapsContainer.html(`
+                <a href="${data.maps}" target="_blank" class="btn btn-sm btn-block btn-outline-info mt-3">
+                    <i class="fa-solid fa-map-location-dot mr-2"></i>VER EN GOOGLE MAPS
+                </a>
+            `);
+        } else {
+            mapsContainer.html('<div class="x-small text-muted mt-3 italic text-center">Ubicación sin GPS cargado</div>');
+        }
+
+        $('#modalDetalleVisita').modal('show');
     });
 </script>
 {% endblock %}

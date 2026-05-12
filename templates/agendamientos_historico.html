@@ -166,7 +166,7 @@
                                 name="fecha" 
                                 id="reagendar_fecha" 
                                 class="form-control" 
-                                required 
+                                oninvalid="this.setCustomValidity('{{ txt.ALERTA_FECHA }}')" oninput="this.setCustomValidity('')" required 
                                 onchange="validarFechaNoLaboral(this)">
                         </div>
                     </div>
@@ -194,6 +194,8 @@
                             <select name="cuadrilla_id" 
                                     id="reagendar_cuadrilla" 
                                     class="form-control form-control-sm shadow-none" 
+                                    oninvalid="this.setCustomValidity('{{ txt.ALERTA_CUADRILLA }}')" 
+                                    oninput="this.setCustomValidity('')" 
                                     required>
                                 <option value="" disabled>Seleccione un equipo...</option>
                                 
@@ -210,7 +212,7 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="small font-weight-bold text-uppercase">Servicio</label>
-                            <select name="servicio" id="reagendar_servicio" class="form-control">
+                            <select name="servicio" id="reagendar_servicio" class="form-control" oninvalid="this.setCustomValidity('{{ txt.ALERTA_SERVICIO }}')" oninput="this.setCustomValidity('')" required  >
                                 <option value="PISCINA Y JARDÍN">PISCINA Y JARDÍN</option>
                                 <option value="SOLO PISCINA">SOLO PISCINA</option>
                                 <option value="SOLO JARDÍN">SOLO JARDÍN</option>

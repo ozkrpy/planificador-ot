@@ -55,6 +55,18 @@
 
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.05);
+
+    --week-bg: #e2e8f0;           /* Gris azulado muy suave para el separador de semana */
+    --week-text: #475569;         /* Texto gris oscuro, no negro */
+    
+    --day-bg: #f1f5f9;            /* Fondo casi blanco para el día */
+    --day-text: #334155;          /* Gris pizarra */
+
+    --crew-header-bg: #f8fafc;    /* Fondo muy claro para el encabezado de la cuadrilla */
+    --crew-text: #1e293b;         /* Texto principal */
+    
+    --brand-soft: #dcfce7;        /* Verde muy tenue para resaltar elementos */
+    --brand-dark: #166534;        /* Verde bosque para textos importantes */
 }
 
 /* RESET */
