@@ -121,7 +121,7 @@
                                     <td class="text-right">
                                         {% set mv_data = {
                                             "fecha": item.fecha.strftime('%d/%m/%Y'),
-                                            "hora": item.hora.strftime('%H:%M') if item.hora else 'S/H',
+                                            "hora": item.hora_sugerida.strftime('%H:%M') if item.hora_sugerida else 'S/H',
                                             "estado": item.estado,
                                             "cliente": item.cliente.nombre | upper,
                                             "sucursal": item.ubicacion.nombre_sucursal if item.ubicacion else 'Principal',

@@ -121,48 +121,59 @@
         <div id="ubicaciones-container">
             {% if c and c.ubicaciones %}
                 {% for ubi in c.ubicaciones %}
-                <div class="ubicacion-row border rounded p-3 mb-3 bg-white shadow-sm">
-
+                <div class="ubicacion-row border rounded p-3 mb-4 bg-white shadow-sm border-left-success">
                     <input type="hidden" name="ubi_id[]" value="{{ ubi.id }}">
                     
-                    <div class="row mb-2">
-                        <div class="col-md-5">
+                    <div class="row mb-3">
+                        <div class="col-lg-5 col-md-6 mb-2">
                             <label class="x-small font-weight-bold text-muted">NOMBRE DE SEDE</label>
                             <input type="text" name="ubi_nombre[]" value="{{ ubi.nombre_sucursal }}" 
-                                   class="form-control form-control-sm font-weight-bold" placeholder="Ej: Casa Quinta">
+                                class="form-control form-control-sm font-weight-bold border-primary" placeholder="Ej: Principal">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-lg-6 col-md-5 mb-2">
                             <label class="x-small font-weight-bold text-muted">GOOGLE MAPS URL</label>
-                            <input type="text" name="ubi_url[]" value="{{ ubi.coordenadas_url }}" 
-                                   class="form-control form-control-sm" placeholder="Link o Coordenadas">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-light"><i class="fa-solid fa-location-dot"></i></span>
+                                </div>
+                                <input type="text" name="ubi_url[]" value="{{ ubi.coordenadas_url }}" 
+                                    class="form-control" placeholder="Link de ubicación">
+                            </div>
                         </div>
-                        <div class="col-md-1 text-right">
+                        <div class="col-lg-1 col-md-1 text-right">
                             <button type="button" class="btn btn-sm btn-outline-danger border-0 remove-ubi mt-4">
-                                <i class="fa fa-trash-can"></i>
+                                <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>
                     </div>
-
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-lg-3 col-md-6 mb-2">
                             <label class="x-small font-weight-bold text-muted">CIUDAD</label>
                             <input type="text" name="ubi_ciudad[]" value="{{ ubi.ciudad or '' }}" 
-                                   class="form-control form-control-sm" placeholder="Asunción">
+                                class="form-control form-control-sm" placeholder="Asunción">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-lg-3 col-md-6 mb-2">
                             <label class="x-small font-weight-bold text-muted">BARRIO</label>
                             <input type="text" name="ubi_barrio[]" value="{{ ubi.barrio or '' }}" 
-                                   class="form-control form-control-sm" placeholder="Mburucuyá">
+                                class="form-control form-control-sm" placeholder="Mburucuyá">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-lg-3 col-md-6 mb-2">
                             <label class="x-small font-weight-bold text-muted">CALLE PRINCIPAL Y NRO</label>
                             <input type="text" name="ubi_calle[]" value="{{ ubi.calle_principal or '' }}" 
-                                   class="form-control form-control-sm" placeholder="Avda. Santísima Trinidad">
+                                class="form-control form-control-sm" placeholder="Avda. Santísima Trinidad">
                         </div>
-                        <div class="col-md-2">
-                            <label class="x-small font-weight-bold text-muted">{{ txt.CLIENTE_UBI_AGRUPADOR }}</label>
+                        <div class="col-lg-3 col-md-6 mb-2">
+                            <label class="x-small font-weight-bold text-muted">CALLE SECUNDARIA</label>
+                            <input type="text" name="ubi_calle_secundaria[]" value="{{ ubi.calle_secundaria or '' }}" 
+                                class="form-control form-control-sm" placeholder="Esquina o paralela">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <label class="x-small font-weight-bold text-muted text-uppercase">{{ txt.CLIENTE_UBI_AGRUPADOR }}</label>
                             <input type="text" name="ubi_grupo[]" value="{{ ubi.grupo or '' }}" 
-                                   class="form-control form-control-sm text-center font-weight-bold" placeholder="Indique alguna referencia para agrupar esta sede con otras (Ej: Zona Norte, Sucursal Principal, etc.) ">
+                                class="form-control form-control-sm font-weight-bold bg-light" 
+                                placeholder="Referencia para agrupar (Ej: Zona Norte, Sucursal Principal)">
                         </div>
                     </div>
                 </div>

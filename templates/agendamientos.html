@@ -81,15 +81,13 @@
                                 {% if visitas_cuadrilla_dia %}
                                     <div class="col-xl-6 col-lg-12 mb-3">
                                         <div class="card shadow-sm border-0">
-
-                                            <div class="card-header bg-white py-2 border-bottom-0" 
-                                                style="border-left: 4px solid var(--brand-700);">
+                                            <div class="card-header bg-white py-3 border-bottom-0" 
+                                                style="border-left: 3px solid var(--brand-700);">
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <div>
                                                         <h6 class="mb-0 font-weight-bold text-dark-green" style="font-size:0.8rem;">
                                                             {{ c.nombre_cuadrilla }}
                                                         </h6>
-                                                    
                                                         <div class="x-small text-muted">
                                                             <i class="fa-solid fa-truck-pickup mr-1"></i>
                                                             {% if c.vehiculo_default %}
@@ -100,7 +98,7 @@
                                                             {% endif %}
                                                         </div>
                                                     </div>
-                                                    <span class="badge badge-pill badge-light border text-dark">
+                                                    <span class="badge badge-pill badge-light border text-dark ml-3">
                                                         {{ c.integrantes|length }} integrantes
                                                     </span>
                                                 </div>
@@ -112,9 +110,9 @@
                                                         <thead class="thead-light x-small">
                                                             <tr>
                                                                 <th style="width:15%" class="pl-3">HORA</th>
-                                                                <th style="width:45%">CLIENTE</th>
+                                                                <th style="width:40%">CLIENTE</th>
                                                                 <th style="width:20%">SERVICIO</th>
-                                                                <th style="width:20%" class="text-right pr-3">ESTADO</th>
+                                                                <th style="width:25%" class="text-right pr-3">ESTADO</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -149,7 +147,7 @@
                                                                 </td>
                                                                 <td class="text-right pr-3">
 
-                                                                <div class="row">
+                                                                <div class="row text-right align-items-center no-gutters justify-content-end">
                                                                     <div class="dropdown">
                                                                         <button class="btn btn-xs font-weight-bold px-2
                                                                             {% if v.estado == 'PENDIENTE' %}btn-warning-soft
@@ -204,23 +202,23 @@
                                                                         </div>
                                                                     </div>
                                                                     <div class="font-weight-bold px-2">
-                                                                        {# BOTÓN OJO - NUEVO #}
                                                                         {% set mv_data = {
-                                                                            "fecha": v.fecha.strftime('%d/%m/%Y'),
+                                                                            "fecha": v.fecha.strftime('%A, %d/%m/%Y'),
                                                                             "hora": v.hora_sugerida.strftime('%H:%M') if v.hora_sugerida else 'S/H',
                                                                             "estado": v.estado,
                                                                             "cliente": v.cliente.nombre | upper,
                                                                             "sucursal": v.ubicacion.nombre_sucursal if v.ubicacion else 'Principal',
-                                                                            "direccion": ((v.ubicacion.direccion if v.ubicacion else '') ~ ' - ' ~ (v.ubicacion.ciudad if v.ubicacion else '')) | replace('\n', ' ') | replace('\r', ''),
+                                                                            "direccion": (v.ubicacion.ciudad if v.ubicacion else '') ~ ' - ' ~ (v.ubicacion.barrio if v.ubicacion else ''),
+                                                                            "calles": (v.ubicacion.calle_principal if v.ubicacion else '') ~ ' - ' ~ (v.ubicacion.calle_secundaria if v.ubicacion else ''),
                                                                             "servicio": v.servicio,
                                                                             "cuadrilla": v.config_cuadrilla.nombre_cuadrilla if v.config_cuadrilla else 'SIN ASIGNAR',
-                                                                            "observaciones": (v.observaciones or 'Sin observaciones') | replace('\n', ' ') | replace('\r', ''),
+                                                                            "observaciones": v.observaciones or 'Sin observaciones adicionales',
                                                                             "vehiculo": (v.config_cuadrilla.vehiculo_default.denominacion if v.config_cuadrilla and v.config_cuadrilla.vehiculo_default else 'N/A'),
                                                                             "chapa": (v.config_cuadrilla.vehiculo_default.chapa if v.config_cuadrilla and v.config_cuadrilla.vehiculo_default else ''),
                                                                             "maps": v.ubicacion.coordenadas_url if v.ubicacion else ''
-                                                                        } %}
+                                                                        } %}                                                                        
                                                                         <button class="btn btn-link p-0 ml-1 text-muted btn-ver-visita" 
-                                                                                data-payload='{{ mv_data | tojson | safe }}'>
+                                                                                data-payload='{{ mv_data | tojson | safe }}' title="Ver detalles">
                                                                             <i class="fa-solid fa-eye" style="font-size: 0.75rem;"></i>
                                                                         </button>
                                                                     </div>                                                                        
@@ -237,7 +235,7 @@
                                                 <div class="d-flex justify-content-end align-items-center">
                                                     {% set payload = {
                                                         "cuadrilla": c.nombre_cuadrilla | upper,
-                                                        "fecha": dia_nombre | upper ~ " " ~ fecha.strftime('%d/%m/%Y'),
+                                                        "fecha": dia_nombre | upper ~ " " ~ fecha.strftime('%A, %d/%m/%Y'),
                                                         "vehiculo": (c.vehiculo_default.denominacion ~ " (" ~ c.vehiculo_default.chapa ~ ")") if c.vehiculo_default else "",
                                                         "visitas": visitas_cuadrilla_dia | map(attribute="id") | list
                                                     } %}
@@ -746,6 +744,79 @@
                         onclick="copiarHojaRuta()">
                     <i class="fa-regular fa-copy mr-1"></i> Copiar para WhatsApp
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetalleVisita" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title text-dark-green font-weight-bold">
+                    <i class="fa-solid fa-circle-info mr-2"></i>DETALLE DEL CLIENTE Y SERVICIO
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="px-4 py-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge badge-day px-3 py-2" id="mv_fecha_display"></span>
+                        <span class="font-weight-bold ml-2 text-primary" id="mv_hora_display"></span>
+                    </div>
+                    <span class="badge" id="mv_estado_badge"></span>
+                </div>
+
+                <div class="row no-gutters">
+                    <div class="col-md-5 border-right bg-light p-4">
+                        <h6 class="header-subtitle mb-3">Datos del Cliente</h6>
+                        <div class="mb-3">
+                            <label class="x-small text-muted mb-0">Razón Social / Nombre</label>
+                            <div class="font-weight-bold h6 text-dark" id="mv_cliente_nombre"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="x-small text-muted mb-0">Sucursal / Ubicación</label>
+                            <div class="small font-weight-bold" id="mv_sucursal_nombre"></div>
+                            <div class="x-small text-muted" id="mv_direccion_full"></div>
+                            <div class="x-small text-muted" id="mv_calles"></div>
+                        </div>
+                        <div id="mv_maps_container">
+                            </div>
+                    </div>
+
+                    <div class="col-md-7 p-4 bg-white">
+                        <h6 class="header-subtitle mb-3">Detalles del Servicio</h6>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="x-small text-muted mb-0">Tipo de Servicio</label>
+                                <div class="badge badge-success-soft d-block text-left" id="mv_servicio_tipo"></div>
+                            </div>
+                            <div class="col-6">
+                                <label class="x-small text-muted mb-0">Cuadrilla Asignada</label>
+                                <div class="font-weight-bold small text-uppercase" id="mv_cuadrilla_nombre"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group bg-light p-2 rounded">
+                            <label class="x-small text-muted">Observaciones de Campo</label>
+                            <p class="small mb-0 italic" id="mv_observaciones_text"></p>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top">
+                            <h6 class="header-subtitle mb-2">Vehículo y Logística</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-truck-pickup fa-2x text-muted mr-3 opacity-50"></i>
+                                <div>
+                                    <div class="small font-weight-bold" id="mv_vehiculo_denominacion"></div>
+                                    <div class="x-small text-muted" id="mv_vehiculo_chapa"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -1291,5 +1362,43 @@ $('#modalGenerarSemana').on('show.bs.modal', function () {
     const satStr = nextSat.toLocaleDateString('es-PY', fmt);
     document.getElementById('semana_label').textContent = `${monStr}  →  ${satStr}`;
 });
+
+    $(document).on('click', '.btn-ver-visita', function() {
+        const data = JSON.parse($(this).attr('data-payload'));
+        
+        // Mapeo de texto simple
+        $('#mv_fecha_display').text(data.fecha);
+        $('#mv_hora_display').text(data.hora + ' HS');
+        $('#mv_cliente_nombre').text(data.cliente);
+        $('#mv_sucursal_nombre').text(data.sucursal);
+        $('#mv_direccion_full').text(data.direccion);
+        $('#mv_calles').text(data.calles);
+        $('#mv_servicio_tipo').text(data.servicio);
+        $('#mv_cuadrilla_nombre').text(data.cuadrilla);
+        $('#mv_observaciones_text').text(data.observaciones);
+        $('#mv_vehiculo_denominacion').text(data.vehiculo);
+        $('#mv_vehiculo_chapa').text(data.chapa);
+
+        // Badge de Estado dinámico
+        const badge = $('#mv_estado_badge');
+        badge.text(data.estado).removeClass().addClass('badge px-3 py-2');
+        if (data.estado === 'COMPLETADO') badge.addClass('badge-success-soft text-success');
+        else if (data.estado === 'PENDIENTE') badge.addClass('badge-warning-soft text-warning');
+        else badge.addClass('badge-secondary-soft text-muted');
+
+        // Botón de Google Maps
+        const mapsContainer = $('#mv_maps_container');
+        if (data.maps) {
+            mapsContainer.html(`
+                <a href="${data.maps}" target="_blank" class="btn btn-sm btn-block btn-outline-info mt-3">
+                    <i class="fa-solid fa-map-location-dot mr-2"></i>VER EN GOOGLE MAPS
+                </a>
+            `);
+        } else {
+            mapsContainer.html('<div class="x-small text-muted mt-3 italic text-center">Ubicación sin GPS cargado</div>');
+        }
+
+        $('#modalDetalleVisita').modal('show');
+    });
 </script>
 {% endblock %}

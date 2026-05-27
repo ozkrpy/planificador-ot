@@ -142,3 +142,8 @@ $env:FLASK_ENV="staging"; python.exe .\carga_masiva_clientes.py .\data-clientes.
 $env:FLASK_ENV="staging"; python.exe .\carga_masiva_proveedores.py .\data-proveedores.csv                                                                                        
 $env:FLASK_ENV="staging"; python.exe .\carga_masiva_feriados.py            
 
+$env:FLASK_ENV = "staging"                                                                                                                             
+python.exe .\carga_masiva_clientes.py .\data-clientes.csv                                                                                              
+python.exe .\carga_masiva_proveedores.py .\data-proveedores.csv                                                                                        
+python.exe .\carga_masiva_feriados.py                                                                                                                  
+python.exe .\carga_masiva_detalles_ubicaciones.py   

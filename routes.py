@@ -115,10 +115,6 @@ def init_routes(app):
         pendientes = db.session.query(db.func.sum(DetalleVisita.total)).filter(DetalleVisita.estado_pago == 'PENDIENTE').scalar() or 0
         pagado = db.session.query(db.func.sum(DetalleVisita.total)).filter(DetalleVisita.estado_pago == 'PAGADO').scalar() or 0
         datos_grafico = [float(pagado), float(pendientes)]
-
-        for u in Ubicacion.query.all():
-            print(f"ID {u.id}: {u.nombre_sucursal} - URL: {u.coordenadas_url}") 
-
         return render_template('index.html', 
                             txt=TEXTOS, 
                             datetime=datetime,
@@ -146,11 +142,6 @@ def init_routes(app):
 
         lista_clientes = base_query.order_by(Cliente.nombre).all()
         lista_categorias = Categoria.query.all()
-
-        # ubicaciones = Ubicacion.query.all() # PLACEHOLDER: Solo para extraer ubicaciones para verificar con googlemaps
-        # for u in ubicaciones: 
-        #     print(f"{u.id} | {u.coordenadas_url}")
-        
         return render_template('clientes_lista.html', 
                             clientes=lista_clientes, 
                             categorias=lista_categorias
